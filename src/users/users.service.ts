@@ -1,0 +1,172 @@
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { PrismaService } from '../database/prisma.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
+
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaService) { }
+
+  /**
+   * List all users for the current merchant.
+   * Never returns password_hash.
+   */
+  async findAll(merchantId: string) {
+    const users = await this.prisma.users.findMany({
+      where: { merchant_id: merchantId },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return users.map(({ password_hash, ...user }) => user);
+  }
+
+  /**
+   * Get a single user by ID (merchant-scoped).
+   */
+  async findOne(id: string, merchantId: string) {
+    const user = await this.prisma.users.findFirst({
+      where: { id, merchant_id: merchantId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    const { password_hash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  /**
+   * Create a new user under the current merchant.
+   * - username and email must be unique per merchant.
+   * - Password is hashed before storage.
+   */
+  async create(dto: CreateUserDto, merchantId: string, createdBy: string) {
+    // Check email uniqueness per merchant
+    const existingEmail = await this.prisma.users.findFirst({
+      where: { merchant_id: merchantId, email: dto.email },
+    });
+    if (existingEmail) {
+      throw new ConflictException(
+        'Email already exists for this merchant',
+      );
+    }
+
+    // Check username uniqueness per merchant
+    const existingUsername = await this.prisma.users.findFirst({
+      where: { merchant_id: merchantId, username: dto.username },
+    });
+    if (existingUsername) {
+      throw new ConflictException(
+        'Username already exists for this merchant',
+      );
+    }
+
+    const password_hash = await bcrypt.hash(dto.password, 10);
+
+    const user = await this.prisma.users.create({
+      data: {
+        name: dto.name,
+        username: dto.username,
+        email: dto.email,
+        password_hash,
+        avatar: dto.avatar,
+        is_active: dto.is_active ?? true,
+        merchant_id: merchantId,
+        created_by: createdBy,
+        updated_by: createdBy,
+      },
+    });
+
+    const { password_hash: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  /**
+   * Update a user (merchant-scoped).
+   * - Only updates provided fields.
+   * - Re-hashes password if provided.
+   * - Validates email/username uniqueness on change.
+   */
+  async update(
+    id: string,
+    dto: UpdateUserDto,
+    merchantId: string,
+    updatedBy: string,
+  ) {
+    // Ensure user exists and belongs to merchant
+    await this.findOne(id, merchantId);
+
+    // Validate email uniqueness if changing
+    if (dto.email) {
+      const conflict = await this.prisma.users.findFirst({
+        where: { merchant_id: merchantId, email: dto.email },
+      });
+      if (conflict && conflict.id !== id) {
+        throw new ConflictException(
+          'Email already exists for this merchant',
+        );
+      }
+    }
+
+    // Validate username uniqueness if changing
+    if (dto.username) {
+      const conflict = await this.prisma.users.findFirst({
+        where: { merchant_id: merchantId, username: dto.username },
+      });
+      if (conflict && conflict.id !== id) {
+        throw new ConflictException(
+          'Username already exists for this merchant',
+        );
+      }
+    }
+
+    const updateData: Record<string, unknown> = {
+      updated_by: updatedBy,
+      updated_at: new Date(),
+    };
+
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.username !== undefined) updateData.username = dto.username;
+    if (dto.email !== undefined) updateData.email = dto.email;
+    if (dto.avatar !== undefined) updateData.avatar = dto.avatar;
+    if (dto.is_active !== undefined) updateData.is_active = dto.is_active;
+    if (dto.password !== undefined) {
+      updateData.password_hash = await bcrypt.hash(dto.password, 10);
+    }
+
+    const user = await this.prisma.users.update({
+      where: { id },
+      data: updateData,
+    });
+
+    const { password_hash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  /**
+   * Soft-delete a user by setting is_active = false (merchant-scoped).
+   * Hard delete is intentionally avoided to preserve audit trails in transactions/shifts.
+   */
+  async remove(id: string, merchantId: string, updatedBy: string) {
+    // Ensure user exists and belongs to merchant
+    await this.findOne(id, merchantId);
+
+    const user = await this.prisma.users.update({
+      where: { id },
+      data: {
+        is_active: false,
+        updated_by: updatedBy,
+        updated_at: new Date(),
+      },
+    });
+
+    const { password_hash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+}
