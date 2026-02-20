@@ -20,6 +20,7 @@ import { CreateShiftDto } from './dto/create-shift.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 // import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Shifts')
 @ApiBearerAuth()
@@ -46,12 +47,13 @@ export class ShiftsController {
   // @RequirePermission('shift.read')
   @ApiOperation({ summary: 'List all shifts (merchant-scoped, optionally by outlet)' })
   @ApiQuery({ name: 'outlet_id', required: false, description: 'Filter by outlet ID' })
-  @ApiResponse({ status: 200, description: 'Return all shifts with outlet and user info' })
+  @ApiResponse({ status: 200, description: 'Return all shifts with outlet and user info (paginated)' })
   findAll(
     @CurrentUser('merchant_id') merchantId: string,
     @Query('outlet_id') outletId?: string,
+    @Query() pagination?: PaginationDto,
   ) {
-    return this.shiftsService.findAll(merchantId, outletId);
+    return this.shiftsService.findAll(merchantId, outletId, pagination);
   }
 
   @Get(':id')

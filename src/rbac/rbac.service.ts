@@ -9,6 +9,7 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { AssignPermissionDto } from './dto/assign-permission.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class RbacService {
@@ -34,15 +35,25 @@ export class RbacService {
     });
   }
 
-  async findAllRoles() {
-    return this.prisma.roles.findMany({
-      orderBy: { name: 'asc' },
-      include: {
-        role_permissions: {
-          include: { permissions: true },
+  async findAllRoles(pagination: PaginationDto = new PaginationDto()) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.roles.findMany({
+        orderBy: { name: 'asc' },
+        include: {
+          role_permissions: {
+            include: { permissions: true },
+          },
         },
-      },
-    });
+        skip,
+        take: limit,
+      }),
+      this.prisma.roles.count(),
+    ]);
+
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   async findOneRole(id: string) {
@@ -112,10 +123,20 @@ export class RbacService {
     });
   }
 
-  async findAllPermissions() {
-    return this.prisma.permissions.findMany({
-      orderBy: { code: 'asc' },
-    });
+  async findAllPermissions(pagination: PaginationDto = new PaginationDto()) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.permissions.findMany({
+        orderBy: { code: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.permissions.count(),
+    ]);
+
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   async findOnePermission(id: string) {

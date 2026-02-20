@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,6 +21,9 @@ import { UpdateOutletDto } from './dto/update-outlet.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
+
+
 
 @ApiTags('Outlets')
 @ApiBearerAuth()
@@ -44,9 +48,12 @@ export class OutletsController {
   @Get()
   @RequirePermission('outlet.read')
   @ApiOperation({ summary: 'List all outlets for the current merchant' })
-  @ApiResponse({ status: 200, description: 'Return all outlets' })
-  findAll(@CurrentUser('merchant_id') merchantId: string) {
-    return this.outletsService.findAll(merchantId);
+  @ApiResponse({ status: 200, description: 'Return all outlets (paginated)' })
+  findAll(
+    @CurrentUser('merchant_id') merchantId: string,
+    @Query() pagination: PaginationDto,
+  ) {
+    return this.outletsService.findAll(merchantId, pagination);
   }
 
   @Get(':id')

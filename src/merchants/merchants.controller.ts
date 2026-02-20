@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -15,6 +16,7 @@ import { UpdateMerchantDto } from './dto/update-merchant.dto';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Merchants')
 @ApiBearerAuth()
@@ -38,9 +40,9 @@ export class MerchantsController {
   @Get()
   @RequirePermission('merchants.read')
   @ApiOperation({ summary: 'Get all merchants' })
-  @ApiResponse({ status: 200, description: 'Return all merchants' })
-  findAll() {
-    return this.merchantsService.findAll();
+  @ApiResponse({ status: 200, description: 'Return all merchants (paginated)' })
+  findAll(@Query() pagination: PaginationDto) {
+    return this.merchantsService.findAll(pagination);
   }
 
   @Get(':id')

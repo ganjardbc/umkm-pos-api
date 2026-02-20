@@ -2,15 +2,26 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../database/prisma.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class MerchantsService {
   constructor(private prisma: PrismaService) { }
 
-  async findAll() {
-    return this.prisma.merchants.findMany({
-      orderBy: { created_at: 'desc' },
-    });
+  async findAll(pagination: PaginationDto) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.merchants.findMany({
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.merchants.count(),
+    ]);
+
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   async findOne(id: string) {

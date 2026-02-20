@@ -19,6 +19,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 // import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Transactions')
 @ApiBearerAuth()
@@ -49,8 +50,9 @@ export class TransactionsController {
   findAll(
     @CurrentUser('merchant_id') merchantId: string,
     @Query('outlet_id') outletId?: string,
+    @Query() pagination?: PaginationDto,
   ) {
-    return this.transactionsService.findAll(merchantId, outletId);
+    return this.transactionsService.findAll(merchantId, outletId, pagination);
   }
 
   @Get(':id')

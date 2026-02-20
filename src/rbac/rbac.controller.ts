@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -23,6 +24,9 @@ import { AssignRoleDto } from './dto/assign-role.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
+
+
 
 @ApiTags('RBAC')
 @ApiBearerAuth()
@@ -50,9 +54,9 @@ export class RbacController {
   @Get('roles')
   @RequirePermission('role.read')
   @ApiOperation({ summary: 'List all roles with their permissions' })
-  @ApiResponse({ status: 200, description: 'Return all roles' })
-  findAllRoles() {
-    return this.rbacService.findAllRoles();
+  @ApiResponse({ status: 200, description: 'Return all roles (paginated)' })
+  findAllRoles(@Query() pagination: PaginationDto) {
+    return this.rbacService.findAllRoles(pagination);
   }
 
   @Get('roles/:id')
@@ -106,9 +110,9 @@ export class RbacController {
   @Get('permissions')
   @RequirePermission('permission.read')
   @ApiOperation({ summary: 'List all permissions' })
-  @ApiResponse({ status: 200, description: 'Return all permissions' })
-  findAllPermissions() {
-    return this.rbacService.findAllPermissions();
+  @ApiResponse({ status: 200, description: 'Return all permissions (paginated)' })
+  findAllPermissions(@Query() pagination: PaginationDto) {
+    return this.rbacService.findAllPermissions(pagination);
   }
 
   @Get('permissions/:id')

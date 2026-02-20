@@ -6,12 +6,13 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class TransactionsService {
   constructor(private prisma: PrismaService) { }
 
-  async findAll(merchantId: string, outletId?: string) {
+  async findAll(merchantId: string, outletId?: string, pagination: PaginationDto = new PaginationDto()) {
     const outletWhere = outletId ? { id: outletId, merchant_id: merchantId } : { merchant_id: merchantId };
 
     // Validate outlet belongs to this merchant if outletId given
@@ -29,15 +30,24 @@ export class TransactionsService {
     });
     const outletIds = outlets.map((o) => o.id);
 
-    return this.prisma.transactions.findMany({
-      where: {
-        outlet_id: outletId ? outletId : { in: outletIds },
-      },
-      include: {
-        transaction_items: true,
-      },
-      orderBy: { created_at: 'desc' },
-    });
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+    const where = {
+      outlet_id: outletId ? outletId : { in: outletIds },
+    };
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.transactions.findMany({
+        where,
+        include: { transaction_items: true },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.transactions.count({ where }),
+    ]);
+
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   async findOne(id: string, merchantId: string) {

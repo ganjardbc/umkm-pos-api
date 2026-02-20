@@ -18,6 +18,7 @@ import { CreateStockAdjustmentDto } from './dto/create-stock-adjustment.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 // import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Stock')
 @ApiBearerAuth()
@@ -41,8 +42,9 @@ export class StockController {
   findLogs(
     @CurrentUser('merchant_id') merchantId: string,
     @Query('product_id') productId?: string,
+    @Query() pagination?: PaginationDto,
   ) {
-    return this.stockService.findLogs(merchantId, productId);
+    return this.stockService.findLogs(merchantId, productId, pagination);
   }
 
   @Post('adjust')

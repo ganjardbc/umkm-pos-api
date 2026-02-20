@@ -6,16 +6,28 @@ import {
 import { PrismaService } from '../database/prisma.service';
 import { CreateOutletDto } from './dto/create-outlet.dto';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class OutletsService {
   constructor(private prisma: PrismaService) { }
 
-  async findAll(merchantId: string) {
-    return this.prisma.outlets.findMany({
-      where: { merchant_id: merchantId },
-      orderBy: { created_at: 'desc' },
-    });
+  async findAll(merchantId: string, pagination: PaginationDto) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+    const where = { merchant_id: merchantId };
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.outlets.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.outlets.count({ where }),
+    ]);
+
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   async findOne(id: string, merchantId: string) {

@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,6 +21,9 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 // import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
+
+
 
 @ApiTags('Products')
 @ApiBearerAuth()
@@ -44,9 +48,12 @@ export class ProductsController {
   @Get()
   // @RequirePermission('product.read')
   @ApiOperation({ summary: 'List all products for the current merchant' })
-  @ApiResponse({ status: 200, description: 'Return all products' })
-  findAll(@CurrentUser('merchant_id') merchantId: string) {
-    return this.productsService.findAll(merchantId);
+  @ApiResponse({ status: 200, description: 'Return all products (paginated)' })
+  findAll(
+    @CurrentUser('merchant_id') merchantId: string,
+    @Query() pagination: PaginationDto,
+  ) {
+    return this.productsService.findAll(merchantId, pagination);
   }
 
   @Get(':id')

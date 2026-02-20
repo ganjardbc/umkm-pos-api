@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateStockAdjustmentDto } from './dto/create-stock-adjustment.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class StockService {
@@ -14,7 +15,7 @@ export class StockService {
    * List all stock_logs for a merchant (via product.merchant_id).
    * Optionally filter by product_id.
    */
-  async findLogs(merchantId: string, productId?: string) {
+  async findLogs(merchantId: string, productId?: string, pagination: PaginationDto = new PaginationDto()) {
     // If filtering by product, verify it belongs to this merchant first
     if (productId) {
       const product = await this.prisma.products.findFirst({
@@ -32,17 +33,28 @@ export class StockService {
     });
     const productIds = products.map((p) => p.id);
 
-    return this.prisma.stock_logs.findMany({
-      where: {
-        product_id: productId ? productId : { in: productIds },
-      },
-      include: {
-        products: {
-          select: { id: true, name: true, slug: true, stock_qty: true },
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+    const where = {
+      product_id: productId ? productId : { in: productIds },
+    };
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.stock_logs.findMany({
+        where,
+        include: {
+          products: {
+            select: { id: true, name: true, slug: true, stock_qty: true },
+          },
         },
-      },
-      orderBy: { created_at: 'desc' },
-    });
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.stock_logs.count({ where }),
+    ]);
+
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   /**

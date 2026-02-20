@@ -7,6 +7,7 @@ import { PrismaService } from '../database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -16,13 +17,23 @@ export class UsersService {
    * List all users for the current merchant.
    * Never returns password_hash.
    */
-  async findAll(merchantId: string) {
-    const users = await this.prisma.users.findMany({
-      where: { merchant_id: merchantId },
-      orderBy: { created_at: 'desc' },
-    });
+  async findAll(merchantId: string, pagination: PaginationDto) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+    const where = { merchant_id: merchantId };
 
-    return users.map(({ password_hash, ...user }) => user);
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.users.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.users.count({ where }),
+    ]);
+
+    const data = users.map(({ password_hash, ...user }) => user);
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   /**

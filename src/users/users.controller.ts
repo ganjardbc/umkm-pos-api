@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,6 +21,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 // import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
+
+
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -44,9 +48,12 @@ export class UsersController {
   @Get()
   // @RequirePermission('user.read')
   @ApiOperation({ summary: 'List all users for the current merchant' })
-  @ApiResponse({ status: 200, description: 'Return all users (no password_hash)' })
-  findAll(@CurrentUser('merchant_id') merchantId: string) {
-    return this.usersService.findAll(merchantId);
+  @ApiResponse({ status: 200, description: 'Return all users, paginated (no password_hash)' })
+  findAll(
+    @CurrentUser('merchant_id') merchantId: string,
+    @Query() pagination: PaginationDto,
+  ) {
+    return this.usersService.findAll(merchantId, pagination);
   }
 
   @Get(':id')

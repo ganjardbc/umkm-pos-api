@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 export type ShiftStatus = 'open' | 'closed';
 
@@ -13,7 +14,7 @@ export type ShiftStatus = 'open' | 'closed';
 export class ShiftsService {
   constructor(private prisma: PrismaService) { }
 
-  async findAll(merchantId: string, outletId?: string) {
+  async findAll(merchantId: string, outletId?: string, pagination: PaginationDto = new PaginationDto()) {
     // Validate outlet belongs to this merchant when outletId is provided
     if (outletId) {
       const outlet = await this.prisma.outlets.findFirst({
@@ -30,16 +31,27 @@ export class ShiftsService {
     });
     const outletIds = outlets.map((o) => o.id);
 
-    return this.prisma.shifts.findMany({
-      where: {
-        outlet_id: outletId ? outletId : { in: outletIds },
-      },
-      include: {
-        outlets: { select: { id: true, name: true, slug: true } },
-        users: { select: { id: true, name: true, username: true } },
-      },
-      orderBy: { start_time: 'desc' },
-    });
+    const { page = 1, limit = 10 } = pagination;
+    const skip = pagination.skip;
+    const where = {
+      outlet_id: outletId ? outletId : { in: outletIds },
+    };
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.shifts.findMany({
+        where,
+        include: {
+          outlets: { select: { id: true, name: true, slug: true } },
+          users: { select: { id: true, name: true, username: true } },
+        },
+        orderBy: { start_time: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.shifts.count({ where }),
+    ]);
+
+    return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
   async findOne(id: string, merchantId: string) {
