@@ -176,12 +176,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/merchants",
+              "raw": "{{base_url}}/merchants?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "merchants"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (1-100, default: 10)"
+                }
               ]
             }
           },
@@ -318,12 +330,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/outlets",
+              "raw": "{{base_url}}/outlets?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "outlets"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (1-100, default: 10)"
+                }
               ]
             }
           },
@@ -460,12 +484,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/users",
+              "raw": "{{base_url}}/users?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (1-100, default: 10)"
+                }
               ]
             }
           },
@@ -602,12 +638,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/products",
+              "raw": "{{base_url}}/products?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (1-100, default: 10)"
+                }
               ]
             }
           },
@@ -744,7 +792,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/transactions?outlet_id=",
+              "raw": "{{base_url}}/transactions?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -757,6 +805,16 @@
                   "value": "",
                   "description": "Optional: Filter by outlet UUID",
                   "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (1-100, default: 10)"
                 }
               ]
             }
@@ -830,7 +888,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/shifts",
+              "raw": "{{base_url}}/shifts?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -843,6 +901,16 @@
                   "value": "",
                   "description": "Optional: Filter by outlet UUID",
                   "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (1-100, default: 10)"
                 }
               ]
             }
@@ -911,7 +979,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/stock/logs",
+              "raw": "{{base_url}}/stock/logs?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -925,6 +993,16 @@
                   "value": "",
                   "description": "Optional: Filter logs by product UUID",
                   "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (1-100, default: 10)"
                 }
               ]
             }
@@ -1201,13 +1279,25 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/rbac/roles",
+                  "raw": "{{base_url}}/rbac/roles?page=1&limit=10",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
                     "rbac",
                     "roles"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number (default: 1)"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Items per page (1-100, default: 10)"
+                    }
                   ]
                 }
               },
@@ -1422,13 +1512,25 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/rbac/permissions",
+                  "raw": "{{base_url}}/rbac/permissions?page=1&limit=50",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
                     "rbac",
                     "permissions"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number (default: 1)"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "50",
+                      "description": "Items per page (1-100, default: 10)"
+                    }
                   ]
                 }
               },
