@@ -19,11 +19,11 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   /**
    * User login
-   * Validates credentials and returns JWT token
+   * Validates credentials and returns JWT token with RBAC data
    */
   async login(dto: LoginDto) {
     // Find user by email with merchant_id (compound unique key)
@@ -51,13 +51,19 @@ export class AuthService {
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.password_hash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
     // Generate JWT token
-    const token = await this.generateToken(user.id, user.email);
+    const token = this.generateToken(user.id, user.email);
+
+    // Fetch user RBAC data
+    const rbac = await this.getUserRbac(user.id);
 
     return {
       access_token: token,
@@ -71,12 +77,13 @@ export class AuthService {
         merchant: user.merchants,
         is_active: user.is_active,
       },
+      rbac,
     };
   }
 
   /**
    * User registration
-   * Creates new user account
+   * Creates new user account and returns JWT token with RBAC data
    */
   async register(dto: RegisterDto) {
     // Check if email already exists for this merchant
@@ -128,7 +135,10 @@ export class AuthService {
     });
 
     // Generate JWT token
-    const token = await this.generateToken(user.id, user.email);
+    const token = this.generateToken(user.id, user.email);
+
+    // Fetch user RBAC data
+    const rbac = await this.getUserRbac(user.id);
 
     return {
       access_token: token,
@@ -142,6 +152,7 @@ export class AuthService {
         merchant: user.merchants,
         is_active: user.is_active,
       },
+      rbac,
     };
   }
 
@@ -167,15 +178,70 @@ export class AuthService {
     }
 
     // Return user without password_hash
-    const { password_hash, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      username: user.username,
+      merchant_id: user.merchant_id,
+      merchants: user.merchants,
+      is_active: user.is_active,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+    };
   }
 
   /**
    * Generate JWT token
    */
-  private async generateToken(userId: string, email: string): Promise<string> {
+  private generateToken(userId: string, email: string) {
     const payload = { sub: userId, email };
     return this.jwtService.sign(payload);
+  }
+
+  /**
+   * Get user RBAC data (roles and permissions)
+   * Fetches all roles assigned to user with their permissions
+   */
+  private async getUserRbac(userId: string) {
+    const userRoles = await this.prisma.user_roles.findMany({
+      where: { user_id: userId },
+      include: {
+        roles: {
+          include: {
+            role_permissions: {
+              include: {
+                permissions: true,
+              },
+            },
+          },
+        },
+        outlets: true,
+      },
+    });
+
+    // Transform to a more usable format
+    return userRoles.map((ur) => {
+      const rolePerms = ur.roles.role_permissions || [];
+      const permissions = rolePerms.map((rp) => ({
+        id: rp.permissions.id,
+        code: rp.permissions.code,
+        description: rp.permissions.description,
+      }));
+
+      return {
+        outlet: {
+          id: ur.outlets.id,
+          name: ur.outlets.name,
+          slug: ur.outlets.slug,
+        },
+        role: {
+          id: ur.roles.id,
+          name: ur.roles.name,
+          description: ur.roles.description,
+          permissions,
+        },
+      };
+    });
   }
 }
