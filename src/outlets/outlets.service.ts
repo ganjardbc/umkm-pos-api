@@ -20,6 +20,7 @@ export class OutletsService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.outlets.findMany({
         where,
+        include: { merchants: true },
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,
@@ -33,6 +34,7 @@ export class OutletsService {
   async findOne(id: string, merchantId: string) {
     const outlet = await this.prisma.outlets.findFirst({
       where: { id, merchant_id: merchantId },
+      include: { merchants: true },
     });
 
     if (!outlet) {

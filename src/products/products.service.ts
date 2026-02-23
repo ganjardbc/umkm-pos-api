@@ -20,6 +20,7 @@ export class ProductsService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.products.findMany({
         where,
+        include: { merchants: true },
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,
@@ -32,6 +33,7 @@ export class ProductsService {
 
   async findOne(id: string, merchantId: string) {
     const product = await this.prisma.products.findFirst({
+      include: { merchants: true },
       where: { id, merchant_id: merchantId },
     });
 
