@@ -129,7 +129,7 @@ export class RbacService {
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.permissions.findMany({
-        orderBy: { code: 'asc' },
+        orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),

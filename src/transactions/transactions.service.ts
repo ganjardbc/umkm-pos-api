@@ -39,7 +39,12 @@ export class TransactionsService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.transactions.findMany({
         where,
-        include: { transaction_items: true },
+        include: {
+          transaction_items: true,
+          outlets: true,
+          shifts: true,
+          users: true,
+        },
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,

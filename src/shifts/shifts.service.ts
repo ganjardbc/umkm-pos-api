@@ -88,6 +88,72 @@ export class ShiftsService {
     return shift;
   }
 
+  async findByUser(userId: string, merchantId: string) {
+    // Get all outlets for this merchant
+    const outlets = await this.prisma.outlets.findMany({
+      where: { merchant_id: merchantId },
+      select: { id: true },
+    });
+    const outletIds = outlets.map((o) => o.id);
+
+    // Find the last shift for this user in any of the merchant's outlets
+    const shift = await this.prisma.shifts.findFirst({
+      where: {
+        user_id: userId,
+        outlet_id: { in: outletIds },
+      },
+      orderBy: { start_time: 'desc' },
+      include: {
+        outlets: { select: { id: true, name: true, slug: true } },
+        users: { select: { id: true, name: true, username: true } },
+        transactions: {
+          select: {
+            id: true,
+            total_amount: true,
+            payment_method: true,
+            created_at: true,
+          },
+          orderBy: { created_at: 'desc' },
+        },
+      },
+    });
+
+    if (!shift) {
+      throw new NotFoundException(`Shift for user ${userId} not found`);
+    }
+
+    return shift;
+  }
+
+  async findByOutlet(outletId: string) {
+    // Find the last shift for this user in any of the merchant's outlets
+    const shift = await this.prisma.shifts.findFirst({
+      where: {
+        outlet_id: outletId,
+      },
+      orderBy: { start_time: 'desc' },
+      include: {
+        outlets: { select: { id: true, name: true, slug: true } },
+        users: { select: { id: true, name: true, username: true } },
+        transactions: {
+          select: {
+            id: true,
+            total_amount: true,
+            payment_method: true,
+            created_at: true,
+          },
+          orderBy: { created_at: 'desc' },
+        },
+      },
+    });
+
+    if (!shift) {
+      throw new NotFoundException(`Shift for outlet ${outletId} not found`);
+    }
+
+    return shift;
+  }
+
   async open(dto: CreateShiftDto, merchantId: string, userId: string) {
     // Validate outlet belongs to this merchant
     const outlet = await this.prisma.outlets.findFirst({
