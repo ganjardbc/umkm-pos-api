@@ -261,6 +261,9 @@ export class RbacService {
     return this.prisma.user_roles.findMany({
       where: { user_id: userId },
       include: {
+        users: {
+          select: { id: true, name: true, email: true, is_active: true },
+        },
         roles: {
           include: {
             role_permissions: {
