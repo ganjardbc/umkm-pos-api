@@ -9,7 +9,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { MerchantsService } from './merchants.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
@@ -23,17 +28,14 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 @Controller('merchants')
 @UseGuards(PermissionGuard)
 export class MerchantsController {
-  constructor(private readonly merchantsService: MerchantsService) { }
+  constructor(private readonly merchantsService: MerchantsService) {}
 
   @Post()
   @RequirePermission('merchants.create')
   @ApiOperation({ summary: 'Create a new merchant' })
   @ApiResponse({ status: 201, description: 'Merchant created successfully' })
   @ApiResponse({ status: 409, description: 'Slug already exists' })
-  create(
-    @Body() dto: CreateMerchantDto,
-    @CurrentUser('id') userId: string,
-  ) {
+  create(@Body() dto: CreateMerchantDto, @CurrentUser('id') userId: string) {
     return this.merchantsService.create(dto, userId);
   }
 
@@ -41,8 +43,11 @@ export class MerchantsController {
   @RequirePermission('merchants.read')
   @ApiOperation({ summary: 'Get all merchants' })
   @ApiResponse({ status: 200, description: 'Return all merchants (paginated)' })
-  findAll(@Query() pagination: PaginationDto) {
-    return this.merchantsService.findAll(pagination);
+  findAll(
+    @Query() pagination: PaginationDto,
+    @CurrentUser('merchant_id') merchantId: string,
+  ) {
+    return this.merchantsService.findAll(pagination, merchantId);
   }
 
   @Get(':id')
@@ -50,8 +55,11 @@ export class MerchantsController {
   @ApiOperation({ summary: 'Get merchant by ID' })
   @ApiResponse({ status: 200, description: 'Return merchant details' })
   @ApiResponse({ status: 404, description: 'Merchant not found' })
-  findOne(@Param('id') id: string) {
-    return this.merchantsService.findOne(id);
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser('merchant_id') merchantId: string,
+  ) {
+    return this.merchantsService.findOne(id, merchantId);
   }
 
   @Patch(':id')
@@ -63,8 +71,9 @@ export class MerchantsController {
     @Param('id') id: string,
     @Body() dto: UpdateMerchantDto,
     @CurrentUser('id') userId: string,
+    @CurrentUser('merchant_id') merchantId: string,
   ) {
-    return this.merchantsService.update(id, dto, userId);
+    return this.merchantsService.update(id, dto, userId, merchantId);
   }
 
   @Delete(':id')
@@ -72,7 +81,10 @@ export class MerchantsController {
   @ApiOperation({ summary: 'Delete a merchant' })
   @ApiResponse({ status: 200, description: 'Merchant deleted successfully' })
   @ApiResponse({ status: 404, description: 'Merchant not found' })
-  remove(@Param('id') id: string) {
-    return this.merchantsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser('merchant_id') merchantId: string,
+  ) {
+    return this.merchantsService.remove(id, merchantId);
   }
 }

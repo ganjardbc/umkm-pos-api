@@ -1,30 +1,77 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
+// Admin merchant slug - users from this merchant can see all merchants
+const ADMIN_MERCHANT_SLUG = 'merchant-admin';
+
 @Injectable()
 export class MerchantsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
-  async findAll(pagination: PaginationDto) {
+  /**
+   * Check if user is admin (belongs to admin merchant)
+   */
+  private async isAdminUser(merchantId: string): Promise<boolean> {
+    const merchant = await this.prisma.merchants.findUnique({
+      where: { id: merchantId },
+      select: { slug: true },
+    });
+    return merchant?.slug === ADMIN_MERCHANT_SLUG;
+  }
+
+  /**
+   * Validate user has access to merchant
+   */
+  private async validateMerchantAccess(
+    targetMerchantId: string,
+    userMerchantId: string,
+  ): Promise<void> {
+    const isAdmin = await this.isAdminUser(userMerchantId);
+
+    // Admin can access all merchants
+    if (isAdmin) {
+      return;
+    }
+
+    // Non-admin can only access their own merchant
+    if (targetMerchantId !== userMerchantId) {
+      throw new ForbiddenException('You do not have access to this merchant');
+    }
+  }
+
+  async findAll(pagination: PaginationDto, userMerchantId: string) {
     const { page = 1, limit = 10 } = pagination;
     const skip = pagination.skip;
 
+    // const isAdmin = await this.isAdminUser(userMerchantId);
+
+    // Build where clause based on user type
+    const where = { id: userMerchantId };
+
     const [data, total] = await this.prisma.$transaction([
       this.prisma.merchants.findMany({
+        where,
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.merchants.count(),
+      this.prisma.merchants.count({ where }),
     ]);
 
     return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, userMerchantId: string) {
+    await this.validateMerchantAccess(id, userMerchantId);
+
     const merchant = await this.prisma.merchants.findUnique({
       where: { id },
     });
@@ -67,8 +114,16 @@ export class MerchantsService {
     });
   }
 
-  async update(id: string, dto: UpdateMerchantDto, userId?: string) {
-    await this.findOne(id);
+  async update(
+    id: string,
+    dto: UpdateMerchantDto,
+    userId?: string,
+    userMerchantId?: string,
+  ) {
+    if (userMerchantId) {
+      await this.validateMerchantAccess(id, userMerchantId);
+      await this.findOne(id, userMerchantId);
+    }
 
     if (dto.slug) {
       const existing = await this.prisma.merchants.findUnique({
@@ -90,8 +145,11 @@ export class MerchantsService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userMerchantId?: string) {
+    if (userMerchantId) {
+      await this.validateMerchantAccess(id, userMerchantId);
+      await this.findOne(id, userMerchantId);
+    }
 
     return this.prisma.merchants.delete({
       where: { id },

@@ -28,8 +28,24 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Starting database seeding...\n');
 
-  // 1. Create Merchant
-  console.log('📦 Creating merchant...');
+  // 1. Create Merchants
+  console.log('📦 Creating merchants...');
+
+  // Admin Merchant (for system admin)
+  const adminMerchant = await prisma.merchants.upsert({
+    where: { slug: 'merchant-admin' },
+    update: {},
+    create: {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'Merchant Admin',
+      slug: 'merchant-admin',
+    },
+  });
+  console.log(
+    `✅ Merchant created: ${adminMerchant.name} (${adminMerchant.slug})`,
+  );
+
+  // Demo Store Merchant (for regular users)
   const merchant = await prisma.merchants.upsert({
     where: { slug: 'demo-store' },
     update: {},
@@ -37,13 +53,32 @@ async function main() {
       id: '550e8400-e29b-41d4-a716-446655440001',
       name: 'Demo Store',
       slug: 'demo-store',
-      // is_active field does not exist in merchants table
     },
   });
   console.log(`✅ Merchant created: ${merchant.name} (${merchant.slug})\n`);
 
   // 2. Create Outlets
   console.log('🏪 Creating outlets...');
+
+  // Admin Outlet (for system admin)
+  const adminOutlet = await prisma.outlets.upsert({
+    where: {
+      merchant_id_slug: {
+        merchant_id: adminMerchant.id,
+        slug: 'outlet-admin',
+      },
+    },
+    update: {},
+    create: {
+      id: '550e8400-e29b-41d4-a716-446655440020',
+      merchant_id: adminMerchant.id,
+      slug: 'outlet-admin',
+      name: 'Outlet Admin',
+      location: 'System Admin Outlet',
+      is_active: true,
+    },
+  });
+  console.log(`✅ Outlet created: ${adminOutlet.name} (${adminOutlet.slug})`);
 
   const mainOutlet = await prisma.outlets.upsert({
     where: {
@@ -81,26 +116,28 @@ async function main() {
       is_active: true,
     },
   });
-  console.log(`✅ Outlet created: ${secondOutlet.name} (${secondOutlet.slug})\n`);
+  console.log(
+    `✅ Outlet created: ${secondOutlet.name} (${secondOutlet.slug})\n`,
+  );
 
   // 3. Create Users
   console.log('👤 Creating users...');
 
   const hashedPassword = await bcrypt.hash('password123', 10);
 
-  // Admin User
+  // System Admin User (belongs to Merchant Admin)
   const adminUser = await prisma.users.upsert({
     where: {
       merchant_id_email: {
-        merchant_id: merchant.id,
+        merchant_id: adminMerchant.id,
         email: 'admin@demo.com',
       },
     },
     update: {},
     create: {
-      id: '550e8400-e29b-41d4-a716-446655440011',
-      merchant_id: merchant.id,
-      name: 'Admin User',
+      id: '550e8400-e29b-41d4-a716-446655440010',
+      merchant_id: adminMerchant.id,
+      name: 'System Admin',
       username: 'admin',
       email: 'admin@demo.com',
       password_hash: hashedPassword,
@@ -170,12 +207,80 @@ async function main() {
       is_active: true,
     },
   });
-  console.log(`✅ User created: ${viewerUser.name} (${viewerUser.email})\n`);
+  console.log(`✅ User created: ${viewerUser.name} (${viewerUser.email})`);
 
+  // Owner User
+  const ownerUser = await prisma.users.upsert({
+    where: {
+      merchant_id_email: {
+        merchant_id: merchant.id,
+        email: 'owner@demo.com',
+      },
+    },
+    update: {},
+    create: {
+      id: '550e8400-e29b-41d4-a716-446655440015',
+      merchant_id: merchant.id,
+      name: 'Owner User',
+      username: 'owner',
+      email: 'owner@demo.com',
+      password_hash: hashedPassword,
+      is_active: true,
+    },
+  });
+  console.log(`✅ User created: ${ownerUser.name} (${ownerUser.email})`);
 
-  // 4. Create Products
+  // Store Manager User (for Demo Store)
+  const storeManagerUser = await prisma.users.upsert({
+    where: {
+      merchant_id_email: {
+        merchant_id: merchant.id,
+        email: 'store-manager@demo.com',
+      },
+    },
+    update: {},
+    create: {
+      id: '550e8400-e29b-41d4-a716-446655440016',
+      merchant_id: merchant.id,
+      name: 'Store Manager User',
+      username: 'store-manager',
+      email: 'store-manager@demo.com',
+      password_hash: hashedPassword,
+      is_active: true,
+    },
+  });
+  console.log(
+    `✅ User created: ${storeManagerUser.name} (${storeManagerUser.email})\n`,
+  );
+
+  // 4. Create Products (for both merchants)
   console.log('🛒 Creating products...');
 
+  // Products for Admin Merchant
+  await prisma.products.upsert({
+    where: {
+      merchant_id_slug: {
+        merchant_id: adminMerchant.id,
+        slug: 'admin-product',
+      },
+    },
+    update: {},
+    create: {
+      id: '550e8400-e29b-41d4-a716-446655440030',
+      merchant_id: adminMerchant.id,
+      slug: 'admin-product',
+      name: 'Admin Product',
+      category: 'System',
+      price: 0,
+      cost: 0,
+      stock_qty: 0,
+      min_stock: 0,
+      is_active: true,
+    },
+  });
+  console.log('✅ Product created: Admin Product (admin-product)');
+
+  // Products for Demo Store
   await prisma.products.upsert({
     where: {
       merchant_id_slug: {
@@ -251,7 +356,9 @@ async function main() {
   const SHIFT_1_ID = '550e8400-e29b-41d4-a716-446655440041'; // closed shift (main-branch, cashier)
   const SHIFT_2_ID = '550e8400-e29b-41d4-a716-446655440042'; // open shift (main-branch, cashier)
 
-  const shift1Exists = await prisma.shifts.findFirst({ where: { id: SHIFT_1_ID } });
+  const shift1Exists = await prisma.shifts.findFirst({
+    where: { id: SHIFT_1_ID },
+  });
   if (!shift1Exists) {
     const shift1StartTime = new Date();
     shift1StartTime.setHours(shift1StartTime.getHours() - 10);
@@ -275,7 +382,9 @@ async function main() {
     console.log('⏭️  Shift 1 already exists, skipping.');
   }
 
-  const shift2Exists = await prisma.shifts.findFirst({ where: { id: SHIFT_2_ID } });
+  const shift2Exists = await prisma.shifts.findFirst({
+    where: { id: SHIFT_2_ID },
+  });
   if (!shift2Exists) {
     const shift2StartTime = new Date();
     shift2StartTime.setHours(shift2StartTime.getHours() - 1);
@@ -284,14 +393,14 @@ async function main() {
       data: {
         id: SHIFT_2_ID,
         outlet_id: mainOutlet.id,
-        user_id: adminUser.id,
+        user_id: storeManagerUser.id,
         start_time: shift2StartTime,
         status: 'open',
-        created_by: adminUser.id,
-        updated_by: adminUser.id,
+        created_by: storeManagerUser.id,
+        updated_by: storeManagerUser.id,
       },
     });
-    console.log('✅ Shift 2 created: Main Branch — admin (open)\n');
+    console.log('✅ Shift 2 created: Main Branch — store-manager (open)\n');
   } else {
     console.log('⏭️  Shift 2 already exists, skipping.\n');
   }
@@ -302,20 +411,22 @@ async function main() {
   const TX_1_ID = '550e8400-e29b-41d4-a716-446655440051';
   const TX_2_ID = '550e8400-e29b-41d4-a716-446655440052';
 
-  // Transaction 1: Main Branch — admin buys Kopi Hitam x2 + Teh Manis x1 (linked to closed shift)
-  const tx1Exists = await prisma.transactions.findFirst({ where: { id: TX_1_ID } });
+  // Transaction 1: Main Branch — store-manager buys Kopi Hitam x2 + Teh Manis x1 (linked to closed shift)
+  const tx1Exists = await prisma.transactions.findFirst({
+    where: { id: TX_1_ID },
+  });
   if (!tx1Exists) {
     await prisma.transactions.create({
       data: {
         id: TX_1_ID,
         outlet_id: mainOutlet.id,
-        user_id: adminUser.id,
+        user_id: storeManagerUser.id,
         shift_id: SHIFT_1_ID,
         payment_method: 'cash',
         total_amount: 40000, // 15000*2 + 10000*1
         is_offline: false,
-        created_by: adminUser.id,
-        updated_by: adminUser.id,
+        created_by: storeManagerUser.id,
+        updated_by: storeManagerUser.id,
       },
     });
 
@@ -329,8 +440,8 @@ async function main() {
           price_snapshot: 15000,
           qty: 2,
           subtotal: 30000,
-          created_by: adminUser.id,
-          updated_by: adminUser.id,
+          created_by: storeManagerUser.id,
+          updated_by: storeManagerUser.id,
         },
         {
           id: '550e8400-e29b-41d4-a716-446655440062',
@@ -340,30 +451,54 @@ async function main() {
           price_snapshot: 10000,
           qty: 1,
           subtotal: 10000,
-          created_by: adminUser.id,
-          updated_by: adminUser.id,
+          created_by: storeManagerUser.id,
+          updated_by: storeManagerUser.id,
         },
       ],
     });
 
     // Decrement stock for tx1 items
-    await prisma.products.update({ where: { id: '550e8400-e29b-41d4-a716-446655440031' }, data: { stock_qty: { decrement: 2 } } });
-    await prisma.products.update({ where: { id: '550e8400-e29b-41d4-a716-446655440032' }, data: { stock_qty: { decrement: 1 } } });
+    await prisma.products.update({
+      where: { id: '550e8400-e29b-41d4-a716-446655440031' },
+      data: { stock_qty: { decrement: 2 } },
+    });
+    await prisma.products.update({
+      where: { id: '550e8400-e29b-41d4-a716-446655440032' },
+      data: { stock_qty: { decrement: 1 } },
+    });
 
     // Stock logs for tx1
     await prisma.stock_logs.createMany({
       data: [
-        { product_id: '550e8400-e29b-41d4-a716-446655440031', change_qty: -2, reason: 'sale', ref_id: TX_1_ID, created_by: adminUser.id, updated_by: adminUser.id },
-        { product_id: '550e8400-e29b-41d4-a716-446655440032', change_qty: -1, reason: 'sale', ref_id: TX_1_ID, created_by: adminUser.id, updated_by: adminUser.id },
+        {
+          product_id: '550e8400-e29b-41d4-a716-446655440031',
+          change_qty: -2,
+          reason: 'sale',
+          ref_id: TX_1_ID,
+          created_by: storeManagerUser.id,
+          updated_by: storeManagerUser.id,
+        },
+        {
+          product_id: '550e8400-e29b-41d4-a716-446655440032',
+          change_qty: -1,
+          reason: 'sale',
+          ref_id: TX_1_ID,
+          created_by: storeManagerUser.id,
+          updated_by: storeManagerUser.id,
+        },
       ],
     });
-    console.log('✅ Transaction 1 created: Main Branch — Kopi Hitam x2 + Teh Manis x1');
+    console.log(
+      '✅ Transaction 1 created: Main Branch — Kopi Hitam x2 + Teh Manis x1',
+    );
   } else {
     console.log('⏭️  Transaction 1 already exists, skipping.');
   }
 
   // Transaction 2: Second Branch — cashier buys Air Mineral x3
-  const tx2Exists = await prisma.transactions.findFirst({ where: { id: TX_2_ID } });
+  const tx2Exists = await prisma.transactions.findFirst({
+    where: { id: TX_2_ID },
+  });
   if (!tx2Exists) {
     await prisma.transactions.create({
       data: {
@@ -395,12 +530,22 @@ async function main() {
     });
 
     // Decrement stock for tx2 items
-    await prisma.products.update({ where: { id: '550e8400-e29b-41d4-a716-446655440033' }, data: { stock_qty: { decrement: 3 } } });
+    await prisma.products.update({
+      where: { id: '550e8400-e29b-41d4-a716-446655440033' },
+      data: { stock_qty: { decrement: 3 } },
+    });
 
     // Stock logs for tx2
     await prisma.stock_logs.createMany({
       data: [
-        { product_id: '550e8400-e29b-41d4-a716-446655440033', change_qty: -3, reason: 'sale', ref_id: TX_2_ID, created_by: cashierUser.id, updated_by: cashierUser.id },
+        {
+          product_id: '550e8400-e29b-41d4-a716-446655440033',
+          change_qty: -3,
+          reason: 'sale',
+          ref_id: TX_2_ID,
+          created_by: cashierUser.id,
+          updated_by: cashierUser.id,
+        },
       ],
     });
     console.log('✅ Transaction 2 created: Second Branch — Air Mineral x3\n');
@@ -415,7 +560,9 @@ async function main() {
   const STOCK_ADJ_2_ID = '550e8400-e29b-41d4-a716-446655440072';
 
   // Restock: Kopi Hitam +50 (manual restock by manager)
-  const adj1Exists = await prisma.stock_logs.findFirst({ where: { id: STOCK_ADJ_1_ID } });
+  const adj1Exists = await prisma.stock_logs.findFirst({
+    where: { id: STOCK_ADJ_1_ID },
+  });
   if (!adj1Exists) {
     await prisma.stock_logs.create({
       data: {
@@ -438,7 +585,9 @@ async function main() {
   }
 
   // Damage: Teh Manis -5 (damaged goods, removed by manager)
-  const adj2Exists = await prisma.stock_logs.findFirst({ where: { id: STOCK_ADJ_2_ID } });
+  const adj2Exists = await prisma.stock_logs.findFirst({
+    where: { id: STOCK_ADJ_2_ID },
+  });
   if (!adj2Exists) {
     await prisma.stock_logs.create({
       data: {
@@ -464,15 +613,29 @@ async function main() {
   console.log('🔐 Seeding RBAC (roles & permissions)...');
 
   // ── Roles ──────────────────────────────────────────────────────────
+  const ROLE_OWNER_ID = '550e8400-e29b-41d4-a716-446655440080';
   const ROLE_ADMIN_ID = '550e8400-e29b-41d4-a716-446655440081';
   const ROLE_MANAGER_ID = '550e8400-e29b-41d4-a716-446655440082';
   const ROLE_CASHIER_ID = '550e8400-e29b-41d4-a716-446655440083';
   const ROLE_VIEWER_ID = '550e8400-e29b-41d4-a716-446655440084';
 
   const rolesData = [
+    {
+      id: ROLE_OWNER_ID,
+      name: 'owner',
+      description: 'Business owner with full control',
+    },
     { id: ROLE_ADMIN_ID, name: 'admin', description: 'Full system access' },
-    { id: ROLE_MANAGER_ID, name: 'manager', description: 'Manage store operations' },
-    { id: ROLE_CASHIER_ID, name: 'cashier', description: 'Handle POS transactions' },
+    {
+      id: ROLE_MANAGER_ID,
+      name: 'manager',
+      description: 'Manage store operations',
+    },
+    {
+      id: ROLE_CASHIER_ID,
+      name: 'cashier',
+      description: 'Handle POS transactions',
+    },
     { id: ROLE_VIEWER_ID, name: 'viewer', description: 'Read-only access' },
   ];
 
@@ -556,36 +719,86 @@ async function main() {
 
   const allPermIds = dbPerms.map((p) => p.id);
 
-  const managerPermIds = [
-    'merchants.read', 'merchants.update',
-    'outlet.create', 'outlet.read', 'outlet.update',
-    'shift.create', 'shift.read', 'shift.update',
-    'role.read', 'permission.read',
-    'user.create', 'user.read', 'user.update',
-    'product.create', 'product.read', 'product.update',
+  const ownerPermIds = [
+    'merchants.read',
+    'merchants.update',
+    'outlet.create',
+    'outlet.read',
+    'outlet.update',
+    'outlet.delete',
+    'shift.create',
+    'shift.read',
+    'shift.update',
+    'role.read',
+    'role.assign',
+    'permission.read',
+    'user.create',
+    'user.read',
+    'user.update',
+    'user.delete',
+    'product.create',
+    'product.read',
+    'product.update',
+    'product.delete',
+    'transaction.create',
     'transaction.read',
-    'report.read', 'stock.adjust', 'stock.read',
+    'report.read',
+    'stock.adjust',
+    'stock.read',
+  ].map(pid);
+
+  const managerPermIds = [
+    'merchants.read',
+    'merchants.update',
+    'outlet.create',
+    'outlet.read',
+    'outlet.update',
+    'shift.create',
+    'shift.read',
+    'shift.update',
+    'role.read',
+    'permission.read',
+    'user.create',
+    'user.read',
+    'user.update',
+    'product.create',
+    'product.read',
+    'product.update',
+    'transaction.read',
+    'report.read',
+    'stock.adjust',
+    'stock.read',
   ].map(pid);
 
   const cashierPermIds = [
     'outlet.read',
-    'shift.create', 'shift.read', 'shift.update',
+    'shift.create',
+    'shift.read',
+    'shift.update',
     'product.read',
-    'transaction.create', 'transaction.read',
+    'transaction.create',
+    'transaction.read',
   ].map(pid);
 
   const viewerPermIds = [
-    'merchants.read', 'outlet.read', 'shift.read',
-    'role.read', 'permission.read',
-    'user.read', 'product.read', 'transaction.read',
-    'report.read', 'stock.read',
+    'merchants.read',
+    'outlet.read',
+    'shift.read',
+    'role.read',
+    'permission.read',
+    'user.read',
+    'product.read',
+    'transaction.read',
+    'report.read',
+    'stock.read',
   ].map(pid);
 
   const rolePermMap: { roleId: string; permIds: string[] }[] = [
-    { roleId: ROLE_ADMIN_ID, permIds: allPermIds },
-    { roleId: ROLE_MANAGER_ID, permIds: managerPermIds },
-    { roleId: ROLE_CASHIER_ID, permIds: cashierPermIds },
-    { roleId: ROLE_VIEWER_ID, permIds: viewerPermIds },
+    { roleId: ROLE_OWNER_ID, permIds: ownerPermIds }, // Owner has most permissions (except merchants.create/delete)
+    { roleId: ROLE_ADMIN_ID, permIds: allPermIds }, // Admin has all permissions
+    { roleId: ROLE_MANAGER_ID, permIds: managerPermIds }, // Manager has operational permissions
+    { roleId: ROLE_CASHIER_ID, permIds: cashierPermIds }, // Cashier has POS permissions
+    { roleId: ROLE_VIEWER_ID, permIds: viewerPermIds }, // Viewer has read-only permissions
   ];
 
   for (const { roleId, permIds } of rolePermMap) {
@@ -615,27 +828,28 @@ async function main() {
   console.log('👥 Assigning roles to users...');
 
   const userRolesData = [
-    // admin user → admin role @ main-branch
-    { user_id: adminUser.id, role_id: ROLE_ADMIN_ID, outlet_id: mainOutlet.id },
-    // manager user → manager role @ main-branch & second-branch
-    { user_id: managerUser.id, role_id: ROLE_MANAGER_ID, outlet_id: mainOutlet.id },
-    { user_id: managerUser.id, role_id: ROLE_MANAGER_ID, outlet_id: secondOutlet.id },
-    // cashier user → cashier role @ both outlets
-    { user_id: cashierUser.id, role_id: ROLE_CASHIER_ID, outlet_id: mainOutlet.id },
-    { user_id: cashierUser.id, role_id: ROLE_CASHIER_ID, outlet_id: secondOutlet.id },
-    // viewer user → viewer role @ main-branch
-    { user_id: viewerUser.id, role_id: ROLE_VIEWER_ID, outlet_id: mainOutlet.id },
+    // System admin → admin role @ Outlet Admin (full access to entire project)
+    {
+      user_id: adminUser.id,
+      role_id: ROLE_ADMIN_ID,
+      outlet_id: adminOutlet.id,
+    },
+    // Other users have no roles assigned (no RBAC for non-admin users)
   ];
 
   for (const ur of userRolesData) {
     const exists = await prisma.user_roles.findFirst({
-      where: { user_id: ur.user_id, role_id: ur.role_id, outlet_id: ur.outlet_id },
+      where: {
+        user_id: ur.user_id,
+        role_id: ur.role_id,
+        outlet_id: ur.outlet_id,
+      },
     });
     if (!exists) {
       await prisma.user_roles.create({ data: ur });
     }
   }
-  console.log('✅ User-role assignments seeded\n');
+  console.log('✅ User-role assignments seeded (only admin has role)\n');
 
   // 9. Daily Reports (aggregated report rows)
   console.log('📊 Seeding daily reports...');
@@ -653,7 +867,7 @@ async function main() {
     {
       merchant_id: merchant.id,
       report_date: twoDaysAgo,
-      total_sales: 55000,  // e.g. Kopi x2 + Teh x1 + Air x3
+      total_sales: 55000, // e.g. Kopi x2 + Teh x1 + Air x3
       total_transactions: 2,
     },
     {
@@ -695,11 +909,19 @@ async function main() {
   console.log('🎉 Seeding completed successfully!\n');
   console.log('📝 Test Credentials:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('Email: admin@demo.com');
-  console.log('Email: cashier@demo.com');
-  console.log('Email: manager@demo.com');
-  console.log('Email: viewer@demo.com');
-  console.log('Password: password123 (for all users)');
+  console.log('System Admin (Full Project Access):');
+  console.log('  Email: admin@demo.com');
+  console.log('  Password: password123');
+  console.log('  Merchant: Merchant Admin');
+  console.log('  Outlet: Outlet Admin');
+  console.log('');
+  console.log('Demo Store Users:');
+  console.log('  Email: owner@demo.com (Owner)');
+  console.log('  Email: store-manager@demo.com (Manager)');
+  console.log('  Email: cashier@demo.com (Cashier)');
+  console.log('  Email: manager@demo.com (Manager)');
+  console.log('  Email: viewer@demo.com (Viewer)');
+  console.log('  Password: password123 (for all users)');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 }
 

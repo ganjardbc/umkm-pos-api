@@ -16,6 +16,12 @@
       "value": "",
       "type": "string",
       "description": "JWT Bearer token — auto-set by the Login request test script"
+    },
+    {
+      "key": "merchant_id",
+      "value": "",
+      "type": "string",
+      "description": "Merchant UUID for scoped requests"
     }
   ],
   "auth": {
@@ -73,6 +79,9 @@
                   "var json = pm.response.json();",
                   "if (json.data && json.data.access_token) {",
                   "  pm.collectionVariables.set('token', json.data.access_token);",
+                  "}",
+                  "if (json.data && json.data.user && json.data.user.merchant_id) {",
+                  "  pm.collectionVariables.set('merchant_id', json.data.user.merchant_id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -936,6 +945,58 @@
                   "key": "id",
                   "value": "{{shift_id}}",
                   "description": "Shift UUID"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shift by User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shifts/user/:user_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shifts",
+                "user",
+                ":user_id"
+              ],
+              "variable": [
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}",
+                  "description": "User UUID"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shift by Outlet ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shifts/outlet/:outlet_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shifts",
+                "outlet",
+                ":outlet_id"
+              ],
+              "variable": [
+                {
+                  "key": "outlet_id",
+                  "value": "{{outlet_id}}",
+                  "description": "Outlet UUID"
                 }
               ]
             }

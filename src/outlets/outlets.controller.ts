@@ -23,20 +23,21 @@ import { RequirePermission } from '../common/decorators/require-permission.decor
 import { PermissionGuard } from '../common/guards/permission.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
-
-
 @ApiTags('Outlets')
 @ApiBearerAuth()
 @Controller('outlets')
 @UseGuards(PermissionGuard)
 export class OutletsController {
-  constructor(private readonly outletsService: OutletsService) { }
+  constructor(private readonly outletsService: OutletsService) {}
 
   @Post()
   @RequirePermission('outlet.create')
   @ApiOperation({ summary: 'Create a new outlet for the current merchant' })
   @ApiResponse({ status: 201, description: 'Outlet created successfully' })
-  @ApiResponse({ status: 409, description: 'Slug already exists for this merchant' })
+  @ApiResponse({
+    status: 409,
+    description: 'Slug already exists for this merchant',
+  })
   create(
     @Body() dto: CreateOutletDto,
     @CurrentUser('merchant_id') merchantId: string,
@@ -73,7 +74,10 @@ export class OutletsController {
   @ApiOperation({ summary: 'Update outlet details (merchant-scoped)' })
   @ApiResponse({ status: 200, description: 'Outlet updated successfully' })
   @ApiResponse({ status: 404, description: 'Outlet not found' })
-  @ApiResponse({ status: 409, description: 'Slug already exists for this merchant' })
+  @ApiResponse({
+    status: 409,
+    description: 'Slug already exists for this merchant',
+  })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateOutletDto,

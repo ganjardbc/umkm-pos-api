@@ -2,7 +2,6 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../database/prisma.service';
@@ -83,28 +82,27 @@ export class AuthService {
 
   /**
    * User registration
-   * Creates new user account and returns JWT token with RBAC data
+   * Creates merchant, outlets, and user account in a transaction
+   * Automatically assigns "Owner" role to the new user for all outlets
+   * Returns JWT token with RBAC data
    */
   async register(dto: RegisterDto) {
-    // Check if email already exists for this merchant
+    // Check if merchant slug already exists
+    const existingMerchant = await this.prisma.merchants.findUnique({
+      where: { slug: dto.merchant.slug },
+    });
+
+    if (existingMerchant) {
+      throw new ConflictException('Merchant slug already exists');
+    }
+
+    // Check if email already exists (across all merchants)
     const existingUser = await this.prisma.users.findFirst({
-      where: {
-        merchant_id: dto.merchant_id,
-        email: dto.email,
-      },
+      where: { email: dto.email },
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already registered for this merchant');
-    }
-
-    // Verify merchant exists
-    const merchant = await this.prisma.merchants.findUnique({
-      where: { id: dto.merchant_id },
-    });
-
-    if (!merchant) {
-      throw new BadRequestException('Merchant not found');
+      throw new ConflictException('Email already registered');
     }
 
     // Hash password
@@ -113,45 +111,110 @@ export class AuthService {
     // Generate username from email (before @)
     const username = dto.email.split('@')[0];
 
-    // Create user
-    const user = await this.prisma.users.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        username: username,
-        password_hash: hashedPassword,
-        merchant_id: dto.merchant_id,
-        is_active: true,
-      },
-      include: {
-        merchants: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
+    // Create merchant, outlets, and user in a transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 1. Create merchant
+      const merchant = await tx.merchants.create({
+        data: {
+          slug: dto.merchant.slug,
+          name: dto.merchant.name,
+          phone: dto.merchant.phone,
+          address: dto.merchant.address,
+          logo: dto.merchant.logo,
+        },
+      });
+
+      // 2. Create outlets
+      const outlets = await Promise.all(
+        dto.outlets.map((outlet) =>
+          tx.outlets.create({
+            data: {
+              merchant_id: merchant.id,
+              slug: outlet.slug,
+              name: outlet.name,
+              location: outlet.location,
+              logo: outlet.logo,
+              is_active: true,
+            },
+          }),
+        ),
+      );
+
+      // 3. Create user
+      const user = await tx.users.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          username: username,
+          password_hash: hashedPassword,
+          merchant_id: merchant.id,
+          is_active: true,
+        },
+        include: {
+          merchants: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
           },
         },
-      },
+      });
+
+      // 4. Find the "owner" role
+      const ownerRole = await tx.roles.findFirst({
+        where: { name: 'owner' },
+      });
+
+      if (!ownerRole) {
+        throw new Error('Owner role not found in the system');
+      }
+
+      // 5. Assign "owner" role to the user for all outlets
+      await Promise.all(
+        outlets.map((outlet) =>
+          tx.user_roles.create({
+            data: {
+              user_id: user.id,
+              role_id: ownerRole.id,
+              outlet_id: outlet.id,
+            },
+          }),
+        ),
+      );
+
+      return { merchant, outlets, user };
     });
 
     // Generate JWT token
-    const token = this.generateToken(user.id, user.email);
+    const token = this.generateToken(result.user.id, result.user.email);
 
     // Fetch user RBAC data
-    const rbac = await this.getUserRbac(user.id);
+    const rbac = await this.getUserRbac(result.user.id);
 
     return {
       access_token: token,
       token_type: 'Bearer',
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        username: user.username,
-        merchant_id: user.merchant_id,
-        merchant: user.merchants,
-        is_active: user.is_active,
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        username: result.user.username,
+        merchant_id: result.user.merchant_id,
+        merchant: result.user.merchants,
+        is_active: result.user.is_active,
       },
+      merchant: {
+        id: result.merchant.id,
+        name: result.merchant.name,
+        slug: result.merchant.slug,
+      },
+      outlets: result.outlets.map((outlet) => ({
+        id: outlet.id,
+        name: outlet.name,
+        slug: outlet.slug,
+        location: outlet.location,
+      })),
       rbac,
     };
   }

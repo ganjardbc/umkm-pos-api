@@ -11,7 +11,7 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * List all users for the current merchant.
@@ -33,7 +33,8 @@ export class UsersService {
       this.prisma.users.count({ where }),
     ]);
 
-    const data = users.map(({ password_hash, ...user }) => user);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const data = users.map(({ password_hash: _, ...user }) => user);
     return { data, meta: PaginationDto.calculateMeta(total, page, limit) };
   }
 
@@ -50,6 +51,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
@@ -65,9 +67,7 @@ export class UsersService {
       where: { merchant_id: merchantId, email: dto.email },
     });
     if (existingEmail) {
-      throw new ConflictException(
-        'Email already exists for this merchant',
-      );
+      throw new ConflictException('Email already exists for this merchant');
     }
 
     // Check username uniqueness per merchant
@@ -75,9 +75,7 @@ export class UsersService {
       where: { merchant_id: merchantId, username: dto.username },
     });
     if (existingUsername) {
-      throw new ConflictException(
-        'Username already exists for this merchant',
-      );
+      throw new ConflictException('Username already exists for this merchant');
     }
 
     const password_hash = await bcrypt.hash(dto.password, 10);
@@ -96,6 +94,7 @@ export class UsersService {
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
@@ -121,9 +120,7 @@ export class UsersService {
         where: { merchant_id: merchantId, email: dto.email },
       });
       if (conflict && conflict.id !== id) {
-        throw new ConflictException(
-          'Email already exists for this merchant',
-        );
+        throw new ConflictException('Email already exists for this merchant');
       }
     }
 
@@ -158,6 +155,7 @@ export class UsersService {
       data: updateData,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
@@ -179,6 +177,7 @@ export class UsersService {
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

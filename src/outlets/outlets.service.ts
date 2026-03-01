@@ -10,7 +10,7 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class OutletsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async findAll(merchantId: string, pagination: PaginationDto) {
     const { page = 1, limit = 10 } = pagination;
@@ -51,7 +51,9 @@ export class OutletsService {
     });
 
     if (existing) {
-      throw new ConflictException('Outlet slug already exists for this merchant');
+      throw new ConflictException(
+        'Outlet slug already exists for this merchant',
+      );
     }
 
     return this.prisma.outlets.create({
@@ -81,7 +83,9 @@ export class OutletsService {
       });
 
       if (conflict && conflict.id !== id) {
-        throw new ConflictException('Outlet slug already exists for this merchant');
+        throw new ConflictException(
+          'Outlet slug already exists for this merchant',
+        );
       }
     }
 

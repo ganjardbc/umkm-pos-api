@@ -19,24 +19,25 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-// import { RequirePermission } from '../common/decorators/require-permission.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { PermissionGuard } from '../common/guards/permission.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
-
-
 
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
 @UseGuards(PermissionGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  // @RequirePermission('user.create')
+  @RequirePermission('user.create')
   @ApiOperation({ summary: 'Create a new user under the current merchant' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 409, description: 'Email or username already exists for this merchant' })
+  @ApiResponse({
+    status: 409,
+    description: 'Email or username already exists for this merchant',
+  })
   create(
     @Body() dto: CreateUserDto,
     @CurrentUser('merchant_id') merchantId: string,
@@ -46,9 +47,12 @@ export class UsersController {
   }
 
   @Get()
-  // @RequirePermission('user.read')
+  @RequirePermission('user.read')
   @ApiOperation({ summary: 'List all users for the current merchant' })
-  @ApiResponse({ status: 200, description: 'Return all users, paginated (no password_hash)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all users, paginated (no password_hash)',
+  })
   findAll(
     @CurrentUser('merchant_id') merchantId: string,
     @Query() pagination: PaginationDto,
@@ -57,7 +61,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  // @RequirePermission('user.read')
+  @RequirePermission('user.read')
   @ApiOperation({ summary: 'Get user by ID (merchant-scoped)' })
   @ApiResponse({ status: 200, description: 'Return user details' })
   @ApiResponse({ status: 404, description: 'User not found' })
@@ -69,11 +73,14 @@ export class UsersController {
   }
 
   @Patch(':id')
-  // @RequirePermission('user.update')
+  @RequirePermission('user.update')
   @ApiOperation({ summary: 'Update user details (merchant-scoped)' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 409, description: 'Email or username already exists for this merchant' })
+  @ApiResponse({
+    status: 409,
+    description: 'Email or username already exists for this merchant',
+  })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -84,7 +91,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  // @RequirePermission('user.delete')
+  @RequirePermission('user.delete')
   @ApiOperation({ summary: 'Deactivate a user (soft-delete, merchant-scoped)' })
   @ApiResponse({ status: 200, description: 'User deactivated successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
