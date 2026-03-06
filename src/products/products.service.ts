@@ -10,7 +10,7 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async findAll(merchantId: string, pagination: PaginationDto) {
     const { page = 1, limit = 10 } = pagination;
@@ -51,7 +51,9 @@ export class ProductsService {
     });
 
     if (existing) {
-      throw new ConflictException('Product slug already exists for this merchant');
+      throw new ConflictException(
+        'Product slug already exists for this merchant',
+      );
     }
 
     return this.prisma.products.create({
@@ -85,7 +87,9 @@ export class ProductsService {
       });
 
       if (conflict && conflict.id !== id) {
-        throw new ConflictException('Product slug already exists for this merchant');
+        throw new ConflictException(
+          'Product slug already exists for this merchant',
+        );
       }
     }
 
