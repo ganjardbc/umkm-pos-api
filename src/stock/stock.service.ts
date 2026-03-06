@@ -9,13 +9,17 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class StockService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * List all stock_logs for a merchant (via product.merchant_id).
    * Optionally filter by product_id.
    */
-  async findLogs(merchantId: string, productId?: string, pagination: PaginationDto = new PaginationDto()) {
+  async findLogs(
+    merchantId: string,
+    productId?: string,
+    pagination: PaginationDto = new PaginationDto(),
+  ) {
     // If filtering by product, verify it belongs to this merchant first
     if (productId) {
       const product = await this.prisma.products.findFirst({
