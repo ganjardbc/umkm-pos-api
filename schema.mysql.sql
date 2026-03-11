@@ -117,6 +117,7 @@ CREATE TABLE transactions (
   payment_method VARCHAR(50) NOT NULL,
   total_amount DECIMAL(14,2) NOT NULL CHECK (total_amount >= 0),
   is_offline BOOLEAN NOT NULL DEFAULT FALSE,
+  is_cancelled BOOLEAN NOT NULL DEFAULT FALSE,
   device_id VARCHAR(120),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -128,7 +129,8 @@ CREATE TABLE transactions (
   INDEX idx_tx_outlet (outlet_id),
   INDEX idx_tx_user (user_id),
   INDEX idx_tx_shift (shift_id),
-  INDEX idx_tx_created (created_at)
+  INDEX idx_tx_created (created_at),
+  INDEX idx_tx_cancelled (is_cancelled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================

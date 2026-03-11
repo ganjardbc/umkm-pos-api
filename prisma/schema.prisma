@@ -190,11 +190,13 @@ model transactions {
   updated_at        DateTime            @default(now()) @db.Timestamp(0)
   created_by        String?             @db.Char(36)
   updated_by        String?             @db.Char(36)
+  is_cancelled      Boolean             @default(false)
   transaction_items transaction_items[]
   outlets           outlets             @relation(fields: [outlet_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_ibfk_1")
   users             users               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_ibfk_2")
   shifts            shifts?             @relation(fields: [shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_ibfk_3")
 
+  @@index([is_cancelled], map: "idx_tx_cancelled")
   @@index([created_at], map: "idx_tx_created")
   @@index([outlet_id], map: "idx_tx_outlet")
   @@index([shift_id], map: "idx_tx_shift")

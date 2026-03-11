@@ -10,14 +10,22 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
-  async findAll(merchantId: string, outletId?: string, pagination: PaginationDto = new PaginationDto()) {
-    const outletWhere = outletId ? { id: outletId, merchant_id: merchantId } : { merchant_id: merchantId };
+  async findAll(
+    merchantId: string,
+    outletId?: string,
+    pagination: PaginationDto = new PaginationDto(),
+  ) {
+    const outletWhere = outletId
+      ? { id: outletId, merchant_id: merchantId }
+      : { merchant_id: merchantId };
 
     // Validate outlet belongs to this merchant if outletId given
     if (outletId) {
-      const outlet = await this.prisma.outlets.findFirst({ where: outletWhere });
+      const outlet = await this.prisma.outlets.findFirst({
+        where: outletWhere,
+      });
       if (!outlet) {
         throw new NotFoundException(`Outlet with ID ${outletId} not found`);
       }
@@ -34,6 +42,7 @@ export class TransactionsService {
     const skip = pagination.skip;
     const where = {
       outlet_id: outletId ? outletId : { in: outletIds },
+      is_cancelled: false,
     };
 
     const [data, total] = await this.prisma.$transaction([
@@ -66,6 +75,7 @@ export class TransactionsService {
       where: {
         id,
         outlet_id: { in: outletIds },
+        is_cancelled: false,
       },
       include: {
         transaction_items: true,
@@ -199,6 +209,81 @@ export class TransactionsService {
     });
 
     // Return full transaction with items
+    return this.prisma.transactions.findFirst({
+      where: { id: result.id },
+      include: { transaction_items: true },
+    });
+  }
+
+  async cancel(id: string, merchantId: string, userId: string) {
+    // 1. Verify transaction exists and belongs to merchant
+    const outlets = await this.prisma.outlets.findMany({
+      where: { merchant_id: merchantId },
+      select: { id: true },
+    });
+    const outletIds = outlets.map((o) => o.id);
+
+    const transaction = await this.prisma.transactions.findFirst({
+      where: {
+        id,
+        outlet_id: { in: outletIds },
+      },
+      include: {
+        transaction_items: true,
+      },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with ID ${id} not found`);
+    }
+
+    if (transaction.is_cancelled) {
+      throw new BadRequestException('Transaction is already cancelled');
+    }
+
+    // 2. Atomic DB transaction for cancellation
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Mark transaction as cancelled
+      const cancelledTx = await tx.transactions.update({
+        where: { id },
+        data: {
+          is_cancelled: true,
+          updated_by: userId,
+          updated_at: new Date(),
+        },
+      });
+
+      // Restore stock for each item and create cancellation logs
+      for (const item of transaction.transaction_items) {
+        if (item.product_id) {
+          // Increment product stock
+          await tx.products.update({
+            where: { id: item.product_id },
+            data: {
+              stock_qty: { increment: item.qty },
+              updated_by: userId,
+              updated_at: new Date(),
+            },
+          });
+
+          // Create stock log for cancellation
+          await tx.stock_logs.create({
+            data: {
+              product_id: item.product_id,
+              change_qty: item.qty,
+              reason: 'cancellation',
+              ref_id: id,
+              created_by: userId,
+              updated_by: userId,
+            },
+          });
+        }
+      }
+
+      return cancelledTx;
+    });
+
+    // Return cancelled transaction with items
     return this.prisma.transactions.findFirst({
       where: { id: result.id },
       include: { transaction_items: true },
