@@ -16,12 +16,13 @@ import { PermissionGuard } from '../common/guards/permission.guard';
 @Controller('reports')
 @UseGuards(PermissionGuard)
 export class ReportsController {
-  constructor(private readonly reportsService: ReportsService) { }
+  constructor(private readonly reportsService: ReportsService) {}
 
   @Get('summary')
   @RequirePermission('report.read')
   @ApiOperation({
-    summary: 'Sales summary — total revenue & transactions (from daily_reports)',
+    summary:
+      'Sales summary — total revenue & transactions (from daily_reports)',
   })
   @ApiResponse({ status: 200, description: 'Aggregated sales summary' })
   @ApiResponse({ status: 403, description: 'Permission denied' })

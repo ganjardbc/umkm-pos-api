@@ -866,18 +866,42 @@ async function main() {
   const dailyReportsData = [
     {
       merchant_id: merchant.id,
+      outlet_id: mainOutlet.id,
       report_date: twoDaysAgo,
       total_sales: 55000, // e.g. Kopi x2 + Teh x1 + Air x3
       total_transactions: 2,
     },
     {
       merchant_id: merchant.id,
+      outlet_id: mainOutlet.id,
       report_date: yesterday,
       total_sales: 40000,
       total_transactions: 1,
     },
     {
       merchant_id: merchant.id,
+      outlet_id: mainOutlet.id,
+      report_date: today,
+      total_sales: 15000,
+      total_transactions: 1,
+    },
+    {
+      merchant_id: merchant.id,
+      outlet_id: secondOutlet.id,
+      report_date: twoDaysAgo,
+      total_sales: 10000,
+      total_transactions: 1,
+    },
+    {
+      merchant_id: merchant.id,
+      outlet_id: secondOutlet.id,
+      report_date: yesterday,
+      total_sales: 20000,
+      total_transactions: 2,
+    },
+    {
+      merchant_id: merchant.id,
+      outlet_id: secondOutlet.id,
       report_date: today,
       total_sales: 15000,
       total_transactions: 1,
@@ -885,19 +909,20 @@ async function main() {
   ];
 
   for (const report of dailyReportsData) {
-    await prisma.daily_reports.upsert({
+    // Delete existing record if it exists
+    await prisma.daily_reports.deleteMany({
       where: {
-        merchant_id_report_date: {
-          merchant_id: report.merchant_id,
-          report_date: report.report_date,
-        },
-      },
-      update: {
-        total_sales: report.total_sales,
-        total_transactions: report.total_transactions,
-      },
-      create: {
         merchant_id: report.merchant_id,
+        outlet_id: report.outlet_id,
+        report_date: report.report_date,
+      },
+    });
+
+    // Create new record
+    await prisma.daily_reports.create({
+      data: {
+        merchant_id: report.merchant_id,
+        outlet_id: report.outlet_id,
         report_date: report.report_date,
         total_sales: report.total_sales,
         total_transactions: report.total_transactions,

@@ -4,7 +4,7 @@ import { QueryReportDto } from './dto/query-report.dto';
 
 @Injectable()
 export class ReportsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   // ─────────────────────────────────────────────
   //  Helpers
@@ -23,9 +23,7 @@ export class ReportsService {
         where: { id: outletId, merchant_id: merchantId },
       });
       if (!outlet) {
-        throw new NotFoundException(
-          `Outlet with ID ${outletId} not found`,
-        );
+        throw new NotFoundException(`Outlet with ID ${outletId} not found`);
       }
       return [outletId];
     }
@@ -49,8 +47,12 @@ export class ReportsService {
   async getSummary(merchantId: string, dto: QueryReportDto) {
     const dateFrom = this.parseDate(dto.date_from);
     const dateTo = this.parseDate(dto.date_to);
+    const outletIds = await this.resolveOutletIds(merchantId, dto.outlet_id);
 
-    const where: Record<string, unknown> = { merchant_id: merchantId };
+    const where: Record<string, unknown> = {
+      merchant_id: merchantId,
+      outlet_id: { in: outletIds },
+    };
     if (dateFrom || dateTo) {
       where.report_date = {
         ...(dateFrom && { gte: dateFrom }),
@@ -89,8 +91,12 @@ export class ReportsService {
   async getDailyReports(merchantId: string, dto: QueryReportDto) {
     const dateFrom = this.parseDate(dto.date_from);
     const dateTo = this.parseDate(dto.date_to);
+    const outletIds = await this.resolveOutletIds(merchantId, dto.outlet_id);
 
-    const where: Record<string, unknown> = { merchant_id: merchantId };
+    const where: Record<string, unknown> = {
+      merchant_id: merchantId,
+      outlet_id: { in: outletIds },
+    };
     if (dateFrom || dateTo) {
       where.report_date = {
         ...(dateFrom && { gte: dateFrom }),
