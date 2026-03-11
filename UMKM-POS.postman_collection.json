@@ -1332,6 +1332,153 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Export Summary as Excel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/export/summary?date_from=2025-01-01&date_to=2025-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "export",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "2025-01-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2025-01-31",
+                  "description": "End date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "outlet_id",
+                  "value": "",
+                  "description": "Optional: Filter by outlet UUID",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Daily Reports as Excel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/export/daily?date_from=2025-01-01&date_to=2025-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "export",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "2025-01-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2025-01-31",
+                  "description": "End date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "outlet_id",
+                  "value": "",
+                  "description": "Optional: Filter by outlet UUID",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Top Products as Excel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/export/top-products?date_from=2025-01-01&date_to=2025-01-31&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "export",
+                "top-products"
+              ],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "2025-01-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2025-01-31",
+                  "description": "End date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "outlet_id",
+                  "value": "",
+                  "description": "Optional: Filter by outlet UUID",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of top products (1–50, default: 10)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Outlet Comparison as Excel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/export/outlet-comparison?date_from=2025-01-01&date_to=2025-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "export",
+                "outlet-comparison"
+              ],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "2025-01-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2025-01-31",
+                  "description": "End date (YYYY-MM-DD)"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
