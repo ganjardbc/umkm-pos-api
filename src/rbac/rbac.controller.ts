@@ -26,14 +26,12 @@ import { RequirePermission } from '../common/decorators/require-permission.decor
 import { PermissionGuard } from '../common/guards/permission.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
-
-
 @ApiTags('RBAC')
 @ApiBearerAuth()
 @Controller('rbac')
 @UseGuards(PermissionGuard)
 export class RbacController {
-  constructor(private readonly rbacService: RbacService) { }
+  constructor(private readonly rbacService: RbacService) {}
 
   // ─────────────────────────────────────────────
   //  ROLES
@@ -44,15 +42,12 @@ export class RbacController {
   @ApiOperation({ summary: 'Create a new role' })
   @ApiResponse({ status: 201, description: 'Role created successfully' })
   @ApiResponse({ status: 409, description: 'Role name already exists' })
-  createRole(
-    @Body() dto: CreateRoleDto,
-    @CurrentUser('id') userId: string,
-  ) {
+  createRole(@Body() dto: CreateRoleDto, @CurrentUser('id') userId: string) {
     return this.rbacService.createRole(dto, userId);
   }
 
   @Get('roles')
-  // @RequirePermission('role.read')
+  @RequirePermission('role.read')
   @ApiOperation({ summary: 'List all roles with their permissions' })
   @ApiResponse({ status: 200, description: 'Return all roles (paginated)' })
   findAllRoles(@Query() pagination: PaginationDto) {
@@ -60,7 +55,7 @@ export class RbacController {
   }
 
   @Get('roles/:id')
-  // @RequirePermission('role.read')
+  @RequirePermission('role.read')
   @ApiOperation({ summary: 'Get role by ID' })
   @ApiResponse({ status: 200, description: 'Return role with permissions' })
   @ApiResponse({ status: 404, description: 'Role not found' })
@@ -84,7 +79,9 @@ export class RbacController {
 
   @Delete('roles/:id')
   @RequirePermission('role.delete')
-  @ApiOperation({ summary: 'Delete a role (cascades role_permissions and user_roles)' })
+  @ApiOperation({
+    summary: 'Delete a role (cascades role_permissions and user_roles)',
+  })
   @ApiResponse({ status: 200, description: 'Role deleted successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   removeRole(@Param('id') id: string) {
@@ -108,15 +105,18 @@ export class RbacController {
   }
 
   @Get('permissions')
-  // @RequirePermission('permission.read')
+  @RequirePermission('permission.read')
   @ApiOperation({ summary: 'List all permissions' })
-  @ApiResponse({ status: 200, description: 'Return all permissions (paginated)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all permissions (paginated)',
+  })
   findAllPermissions(@Query() pagination: PaginationDto) {
     return this.rbacService.findAllPermissions(pagination);
   }
 
   @Get('permissions/:id')
-  // @RequirePermission('permission.read')
+  @RequirePermission('permission.read')
   @ApiOperation({ summary: 'Get permission by ID' })
   @ApiResponse({ status: 200, description: 'Return permission' })
   @ApiResponse({ status: 404, description: 'Permission not found' })
@@ -188,8 +188,10 @@ export class RbacController {
   }
 
   @Get('users/:userId/roles')
-  // @RequirePermission('role.read')
-  @ApiOperation({ summary: 'List all roles assigned to a user (with permissions)' })
+  @RequirePermission('role.read')
+  @ApiOperation({
+    summary: 'List all roles assigned to a user (with permissions)',
+  })
   @ApiResponse({ status: 200, description: 'Return user role assignments' })
   getUserRoles(@Param('userId') userId: string) {
     return this.rbacService.getUserRoles(userId);
