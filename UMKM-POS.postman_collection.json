@@ -1483,6 +1483,242 @@
       ]
     },
     {
+      "name": "Settings",
+      "description": "User settings management — profile, password, email, account, and site preferences.",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/settings/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/settings/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"avatar\": \"https://example.com/avatar-new.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/settings/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"OldPassword123!\",\n  \"newPassword\": \"NewPassword123!\",\n  \"confirmPassword\": \"NewPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Request Email Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/settings/email/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "email",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newemail@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Email",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/settings/email",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "email"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newEmail\": \"newemail@example.com\",\n  \"verificationCode\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/settings/account/deactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "account",
+                "deactivate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"CurrentPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Site Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/settings/site",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "site"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Site Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/settings/site",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "settings",
+                "site"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"darkMode\": true,\n  \"language\": \"id\",\n  \"timezone\": \"Asia/Jakarta\",\n  \"notificationsEnabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "RBAC",
       "description": "Role-Based Access Control — manage roles, permissions, and assignments.",
       "item": [
