@@ -142,11 +142,11 @@ model shifts {
   shift_participants   shift_participants[]
   shift_audit_logs     shift_audit_logs[]
 
-  @@unique([outlet_id, shift_owner_id, status], map: "unique_user_open_shift_per_outlet")
   @@index([outlet_id], map: "idx_shifts_outlet")
   @@index([shift_owner_id], map: "idx_shifts_shift_owner_id")
   @@index([status], map: "idx_shifts_status")
   @@index([start_time(sort: Desc)], map: "idx_shifts_start_time")
+  @@index([outlet_id, shift_owner_id, status], map: "idx_shifts_outlet_owner_status")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

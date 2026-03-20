@@ -390,43 +390,41 @@ export class ShiftsService {
    * Close a multi-cashier shift and mark all participants as removed
    */
   async closeShift(shiftId: string, userId: string, merchantId: string) {
-    // Validate shift belongs to merchant
-    const outlets = await this.prisma.outlets.findMany({
-      where: { merchant_id: merchantId },
-      select: { id: true },
-    });
-    const outletIds = outlets.map((o) => o.id);
+    try {
+      // Validate shift belongs to merchant
+      const outlets = await this.prisma.outlets.findMany({
+        where: { merchant_id: merchantId },
+        select: { id: true },
+      });
+      const outletIds = outlets.map((o) => o.id);
 
-    const shift = await this.prisma.shifts.findFirst({
-      where: {
-        id: shiftId,
-        outlet_id: { in: outletIds },
-      },
-    });
+      const shift = await this.prisma.shifts.findFirst({
+        where: {
+          id: shiftId,
+          outlet_id: { in: outletIds },
+        },
+      });
 
-    if (!shift) {
-      throw new NotFoundException(`Shift with ID ${shiftId} not found`);
-    }
+      if (!shift) {
+        throw new NotFoundException(`Shift with ID ${shiftId} not found`);
+      }
 
-    if (shift.status === 'closed') {
-      throw new BadRequestException('Shift is already closed');
-    }
+      if (shift.status === 'closed') {
+        throw new BadRequestException('Shift is already closed');
+      }
 
-    // Close shift and mark all participants as removed in atomic transaction
-    await this.prisma.$transaction(async (tx) => {
       // Update shift status
-      await tx.shifts.update({
+      await this.prisma.shifts.update({
         where: { id: shiftId },
         data: {
-          status: 'closed' satisfies ShiftStatus,
+          status: 'closed',
           end_time: new Date(),
           updated_by: userId,
-          updated_at: new Date(),
         },
       });
 
       // Mark all participants as removed
-      await tx.shift_participants.updateMany({
+      await this.prisma.shift_participants.updateMany({
         where: {
           shift_id: shiftId,
           participant_removed_at: null,
@@ -437,7 +435,7 @@ export class ShiftsService {
       });
 
       // Create audit log
-      await tx.shift_audit_logs.create({
+      await this.prisma.shift_audit_logs.create({
         data: {
           shift_id: shiftId,
           action: 'shift_closed',
@@ -447,9 +445,13 @@ export class ShiftsService {
           },
         },
       });
-    });
 
-    return this.getShift(shiftId, merchantId);
+      // Return full shift details
+      return this.getShift(shiftId, merchantId);
+    } catch (error) {
+      console.error('Error closing shift:', error);
+      throw error;
+    }
   }
 
   /**
