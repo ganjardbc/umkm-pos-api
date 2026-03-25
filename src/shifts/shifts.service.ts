@@ -14,9 +14,13 @@ export type ShiftStatus = 'open' | 'closed' | 'transferred';
 
 @Injectable()
 export class ShiftsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
-  async findAll(merchantId: string, outletId?: string, pagination: PaginationDto = new PaginationDto()) {
+  async findAll(
+    merchantId: string,
+    outletId?: string,
+    pagination: PaginationDto = new PaginationDto(),
+  ) {
     // Validate outlet belongs to this merchant when outletId is provided
     if (outletId) {
       const outlet = await this.prisma.outlets.findFirst({
@@ -632,11 +636,7 @@ export class ShiftsService {
   /**
    * Add a participant to an open shift
    */
-  async addParticipant(
-    shiftId: string,
-    userId: string,
-    merchantId: string,
-  ) {
+  async addParticipant(shiftId: string, userId: string, merchantId: string) {
     // Validate shift belongs to merchant
     const outlets = await this.prisma.outlets.findMany({
       where: { merchant_id: merchantId },
@@ -674,14 +674,9 @@ export class ShiftsService {
     }
 
     // Check if user is already a participant
-    const existingParticipant = await this.prisma.shift_participants.findFirst(
-      {
-        where: {
-          shift_id: shiftId,
-          user_id: userId,
-        },
-      },
-    );
+    const existingParticipant = await this.prisma.shift_participants.findFirst({
+      where: { shift_id: shiftId, user_id: userId },
+    });
 
     if (existingParticipant) {
       throw new ConflictException(
@@ -724,7 +719,9 @@ export class ShiftsService {
     });
 
     if (!participant) {
-      throw new NotFoundException('Failed to retrieve participant after creation');
+      throw new NotFoundException(
+        'Failed to retrieve participant after creation',
+      );
     }
 
     const transactionCount = await this.prisma.transactions.count({
@@ -748,11 +745,7 @@ export class ShiftsService {
   /**
    * Remove a participant from a shift
    */
-  async removeParticipant(
-    shiftId: string,
-    userId: string,
-    merchantId: string,
-  ) {
+  async removeParticipant(shiftId: string, userId: string, merchantId: string) {
     // Validate shift belongs to merchant
     const outlets = await this.prisma.outlets.findMany({
       where: { merchant_id: merchantId },
