@@ -171,6 +171,22 @@ export class ShiftsController {
     return this.shiftsService.removeParticipant(id, userId, merchantId);
   }
 
+  @Patch(':id/participants/:user_id/restore')
+  @RequirePermission('shift.update')
+  @ApiOperation({ summary: 'Restore removed cashier to shift' })
+  @ApiResponse({ status: 200, description: 'Participant restored successfully' })
+  @ApiResponse({ status: 400, description: 'Shift closed or participant already active' })
+  @ApiResponse({ status: 404, description: 'Participant not found' })
+  @ApiResponse({ status: 409, description: 'Participant is already active' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
+  async restoreParticipant(
+    @Param('id') id: string,
+    @Param('user_id') userId: string,
+    @CurrentUser('merchant_id') merchantId: string,
+  ) {
+    return this.shiftsService.restoreParticipant(id, userId, merchantId);
+  }
+
   @Post(':id/handoff')
   @RequirePermission('shift.update')
   @ApiOperation({ summary: 'Transfer shift ownership' })

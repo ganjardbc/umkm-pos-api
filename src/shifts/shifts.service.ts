@@ -817,6 +817,126 @@ export class ShiftsService {
   }
 
   /**
+   * Restore a previously removed participant to a shift
+   */
+  async restoreParticipant(
+    shiftId: string,
+    userId: string,
+    merchantId: string,
+  ) {
+    // Validate shift belongs to merchant
+    const outlets = await this.prisma.outlets.findMany({
+      where: { merchant_id: merchantId },
+      select: { id: true },
+    });
+    const outletIds = outlets.map((o) => o.id);
+
+    const shift = await this.prisma.shifts.findFirst({
+      where: {
+        id: shiftId,
+        outlet_id: { in: outletIds },
+      },
+    });
+
+    if (!shift) {
+      throw new NotFoundException(`Shift with ID ${shiftId} not found`);
+    }
+
+    // Check shift is open
+    if (shift.status !== 'open') {
+      throw new BadRequestException(
+        'Cannot restore participants to a closed shift',
+      );
+    }
+
+    // Verify user exists and belongs to same merchant
+    const user = await this.prisma.users.findFirst({
+      where: { id: userId, merchant_id: merchantId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        'User not found or does not belong to your merchant',
+      );
+    }
+
+    // Check if participant exists and is removed
+    const participant = await this.prisma.shift_participants.findFirst({
+      where: {
+        shift_id: shiftId,
+        user_id: userId,
+      },
+    });
+
+    if (!participant) {
+      throw new NotFoundException('Participant not found in this shift');
+    }
+
+    if (participant.participant_removed_at === null) {
+      throw new ConflictException(
+        'Participant is already active in this shift',
+      );
+    }
+
+    // Restore participant and create audit log in atomic transaction
+    await this.prisma.$transaction(async (tx) => {
+      await tx.shift_participants.update({
+        where: {
+          id: participant.id,
+        },
+        data: {
+          participant_removed_at: null,
+        },
+      });
+
+      await tx.shift_audit_logs.create({
+        data: {
+          shift_id: shiftId,
+          action: 'participant_restored',
+          user_id: userId,
+          action_details: {
+            restored_user_id: userId,
+          },
+        },
+      });
+    });
+
+    // Return participant details
+    const restoredParticipant = await this.prisma.shift_participants.findFirst({
+      where: {
+        shift_id: shiftId,
+        user_id: userId,
+      },
+      include: {
+        users: { select: { id: true, name: true, username: true } },
+      },
+    });
+
+    if (!restoredParticipant) {
+      throw new NotFoundException(
+        'Failed to retrieve participant after restoration',
+      );
+    }
+
+    const transactionCount = await this.prisma.transactions.count({
+      where: {
+        shift_id: shiftId,
+        cashier_id: userId,
+        is_cancelled: false,
+      },
+    });
+
+    return {
+      user_id: restoredParticipant.user_id,
+      user_name: restoredParticipant.users.name,
+      participant_added_at: restoredParticipant.participant_added_at,
+      participant_removed_at: restoredParticipant.participant_removed_at,
+      is_owner: restoredParticipant.is_owner,
+      transaction_count: transactionCount,
+    };
+  }
+
+  /**
    * Handoff shift ownership to another participant
    */
   async handoffShift(
