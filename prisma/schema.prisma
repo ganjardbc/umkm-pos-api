@@ -126,22 +126,61 @@ model roles {
 }
 
 model shifts {
-  id           String         @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  outlet_id    String         @db.Char(36)
-  user_id      String         @db.Char(36)
-  start_time   DateTime       @db.Timestamp(0)
-  end_time     DateTime?      @db.Timestamp(0)
-  status       String         @db.VarChar(50)
-  created_at   DateTime       @default(now()) @db.Timestamp(0)
-  updated_at   DateTime       @default(now()) @db.Timestamp(0)
-  created_by   String?        @db.Char(36)
-  updated_by   String?        @db.Char(36)
-  outlets      outlets        @relation(fields: [outlet_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shifts_ibfk_1")
-  users        users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "shifts_ibfk_2")
-  transactions transactions[]
+  id                   String                 @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  outlet_id            String                 @db.Char(36)
+  shift_owner_id       String                 @db.Char(36)
+  status               String                 @db.VarChar(20) @default("open")
+  start_time           DateTime               @db.Timestamp(0)
+  end_time             DateTime?              @db.Timestamp(0)
+  created_at           DateTime               @default(now()) @db.Timestamp(0)
+  updated_at           DateTime               @default(now()) @db.Timestamp(0)
+  created_by           String?                @db.Char(36)
+  updated_by           String?                @db.Char(36)
+  outlets              outlets                @relation(fields: [outlet_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shifts_ibfk_1")
+  shift_owner          users                  @relation("shift_owner", fields: [shift_owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "shifts_ibfk_shift_owner")
+  transactions         transactions[]
+  shift_participants   shift_participants[]
+  shift_audit_logs     shift_audit_logs[]
 
   @@index([outlet_id], map: "idx_shifts_outlet")
-  @@index([user_id], map: "idx_shifts_user")
+  @@index([shift_owner_id], map: "idx_shifts_shift_owner_id")
+  @@index([status], map: "idx_shifts_status")
+  @@index([start_time(sort: Desc)], map: "idx_shifts_start_time")
+  @@index([outlet_id, shift_owner_id, status], map: "idx_shifts_outlet_owner_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model shift_participants {
+  id                    String    @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  shift_id              String    @db.Char(36)
+  user_id               String    @db.Char(36)
+  participant_added_at  DateTime  @default(now()) @db.Timestamp(0)
+  participant_removed_at DateTime? @db.Timestamp(0)
+  is_owner              Boolean   @default(false)
+  created_at            DateTime  @default(now()) @db.Timestamp(0)
+  shifts                shifts    @relation(fields: [shift_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shift_participants_ibfk_1")
+  users                 users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "shift_participants_ibfk_2")
+
+  @@unique([shift_id, user_id], map: "unique_participant_per_shift")
+  @@index([shift_id], map: "idx_shift_participants_shift_id")
+  @@index([user_id], map: "idx_shift_participants_user_id")
+  @@index([shift_id, participant_removed_at], map: "idx_shift_participants_active")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model shift_audit_logs {
+  id             String    @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  shift_id       String    @db.Char(36)
+  action         String    @db.VarChar(50)
+  user_id        String    @db.Char(36)
+  action_details Json?
+  created_at     DateTime  @default(now()) @db.Timestamp(0)
+  shifts         shifts    @relation(fields: [shift_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shift_audit_logs_ibfk_1")
+  users          users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "shift_audit_logs_ibfk_2")
+
+  @@index([shift_id], map: "idx_shift_audit_logs_shift_id")
+  @@index([user_id], map: "idx_shift_audit_logs_user_id")
+  @@index([created_at(sort: Desc)], map: "idx_shift_audit_logs_created_at")
 }
 
 model stock_logs {
@@ -186,6 +225,7 @@ model transactions {
   outlet_id         String              @db.Char(36)
   user_id           String              @db.Char(36)
   shift_id          String?             @db.Char(36)
+  cashier_id        String?             @db.Char(36)
   payment_method    String              @db.VarChar(50)
   total_amount      Decimal             @db.Decimal(14, 2)
   is_offline        Boolean             @default(false)
@@ -199,11 +239,13 @@ model transactions {
   outlets           outlets             @relation(fields: [outlet_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_ibfk_1")
   users             users               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_ibfk_2")
   shifts            shifts?             @relation(fields: [shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_ibfk_3")
+  cashier           users?              @relation("cashier_transactions", fields: [cashier_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_ibfk_cashier")
 
   @@index([is_cancelled], map: "idx_tx_cancelled")
   @@index([created_at], map: "idx_tx_created")
   @@index([outlet_id], map: "idx_tx_outlet")
-  @@index([shift_id], map: "idx_tx_shift")
+  @@index([shift_id], map: "idx_transactions_shift_id")
+  @@index([cashier_id], map: "idx_transactions_cashier_id")
   @@index([user_id], map: "idx_tx_user")
 }
 
@@ -226,22 +268,25 @@ model user_roles {
 }
 
 model users {
-  id            String         @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  merchant_id   String         @db.Char(36)
-  avatar        String?        @db.Text
-  username      String         @db.VarChar(120)
-  name          String         @db.VarChar(150)
-  email         String         @db.VarChar(150)
-  password_hash String         @db.Text
-  is_active     Boolean        @default(true)
-  created_at    DateTime       @default(now()) @db.Timestamp(0)
-  updated_at    DateTime       @default(now()) @db.Timestamp(0)
-  created_by    String?        @db.Char(36)
-  updated_by    String?        @db.Char(36)
-  shifts        shifts[]
-  transactions  transactions[]
-  user_roles    user_roles[]
-  merchants     merchants      @relation(fields: [merchant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_ibfk_1")
+  id                 String                @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  merchant_id        String                @db.Char(36)
+  avatar             String?               @db.Text
+  username           String                @db.VarChar(120)
+  name               String                @db.VarChar(150)
+  email              String                @db.VarChar(150)
+  password_hash      String                @db.Text
+  is_active          Boolean               @default(true)
+  created_at         DateTime              @default(now()) @db.Timestamp(0)
+  updated_at         DateTime              @default(now()) @db.Timestamp(0)
+  created_by         String?               @db.Char(36)
+  updated_by         String?               @db.Char(36)
+  shifts_as_owner    shifts[]              @relation("shift_owner")
+  transactions       transactions[]
+  cashier_transactions transactions[]      @relation("cashier_transactions")
+  user_roles         user_roles[]
+  shift_participants shift_participants[]
+  shift_audit_logs   shift_audit_logs[]
+  merchants          merchants             @relation(fields: [merchant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_ibfk_1")
 
   @@unique([merchant_id, email], map: "unique_merchant_email")
   @@unique([merchant_id, username], map: "unique_merchant_username")

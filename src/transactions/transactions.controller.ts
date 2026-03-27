@@ -37,9 +37,10 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Insufficient stock or invalid items',
+    description: 'Insufficient stock, invalid items, or shift not available',
   })
-  @ApiResponse({ status: 404, description: 'Product or outlet not found' })
+  @ApiResponse({ status: 403, description: 'User not a participant in shift or insufficient permissions' })
+  @ApiResponse({ status: 404, description: 'Product, outlet, or shift not found' })
   create(
     @Body() dto: CreateTransactionDto,
     @CurrentUser('merchant_id') merchantId: string,

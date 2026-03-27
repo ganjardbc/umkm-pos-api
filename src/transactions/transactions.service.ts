@@ -3,14 +3,19 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { ShiftsService } from '../shifts/shifts.service';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private shiftsService: ShiftsService,
+  ) {}
 
   async findAll(
     merchantId: string,
@@ -104,6 +109,33 @@ export class TransactionsService {
       throw new BadRequestException('Transaction must have at least one item');
     }
 
+    // Task 4.1, 4.4, 4.5: Validate shift and participant if shift_id provided
+    let cashierId = userId;
+    if (dto.shift_id) {
+      // Validate shift exists and is open
+      try {
+        await this.shiftsService.validateShiftOpen(dto.shift_id);
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          throw new BadRequestException('Shift is not available for transactions');
+        }
+        throw error;
+      }
+
+      // Validate user is an active participant in the shift
+      const isActiveParticipant = await this.shiftsService.isActiveParticipant(
+        dto.shift_id,
+        userId,
+      );
+      if (!isActiveParticipant) {
+        throw new ForbiddenException(
+          'User is not a participant in this shift',
+        );
+      }
+
+      cashierId = userId;
+    }
+
     // 2. Fetch all products (merchant-scoped) and validate stock
     const productIds = dto.items.map((i) => i.product_id);
     const products = await this.prisma.products.findMany({
@@ -159,6 +191,7 @@ export class TransactionsService {
           outlet_id: dto.outlet_id,
           user_id: userId,
           shift_id: dto.shift_id ?? null,
+          cashier_id: cashierId,
           payment_method: dto.payment_method,
           total_amount: totalAmount,
           is_offline: dto.is_offline ?? false,

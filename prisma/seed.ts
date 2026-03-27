@@ -369,7 +369,7 @@ async function main() {
       data: {
         id: SHIFT_1_ID,
         outlet_id: mainOutlet.id,
-        user_id: cashierUser.id,
+        shift_owner_id: cashierUser.id,
         start_time: shift1StartTime,
         end_time: shift1EndTime,
         status: 'closed',
@@ -393,7 +393,7 @@ async function main() {
       data: {
         id: SHIFT_2_ID,
         outlet_id: mainOutlet.id,
-        user_id: storeManagerUser.id,
+        shift_owner_id: storeManagerUser.id,
         start_time: shift2StartTime,
         status: 'open',
         created_by: storeManagerUser.id,
@@ -834,7 +834,62 @@ async function main() {
       role_id: ROLE_ADMIN_ID,
       outlet_id: adminOutlet.id,
     },
-    // Other users have no roles assigned (no RBAC for non-admin users)
+    // Demo Store users
+    // Owner → owner role @ Main Branch & Second Branch
+    {
+      user_id: ownerUser.id,
+      role_id: ROLE_OWNER_ID,
+      outlet_id: mainOutlet.id,
+    },
+    {
+      user_id: ownerUser.id,
+      role_id: ROLE_OWNER_ID,
+      outlet_id: secondOutlet.id,
+    },
+    // Store Manager → manager role @ Main Branch & Second Branch
+    {
+      user_id: storeManagerUser.id,
+      role_id: ROLE_MANAGER_ID,
+      outlet_id: mainOutlet.id,
+    },
+    {
+      user_id: storeManagerUser.id,
+      role_id: ROLE_MANAGER_ID,
+      outlet_id: secondOutlet.id,
+    },
+    // Cashier → cashier role @ Main Branch & Second Branch
+    {
+      user_id: cashierUser.id,
+      role_id: ROLE_CASHIER_ID,
+      outlet_id: mainOutlet.id,
+    },
+    {
+      user_id: cashierUser.id,
+      role_id: ROLE_CASHIER_ID,
+      outlet_id: secondOutlet.id,
+    },
+    // Manager → manager role @ Main Branch & Second Branch
+    {
+      user_id: managerUser.id,
+      role_id: ROLE_MANAGER_ID,
+      outlet_id: mainOutlet.id,
+    },
+    {
+      user_id: managerUser.id,
+      role_id: ROLE_MANAGER_ID,
+      outlet_id: secondOutlet.id,
+    },
+    // Viewer → viewer role @ Main Branch & Second Branch
+    {
+      user_id: viewerUser.id,
+      role_id: ROLE_VIEWER_ID,
+      outlet_id: mainOutlet.id,
+    },
+    {
+      user_id: viewerUser.id,
+      role_id: ROLE_VIEWER_ID,
+      outlet_id: secondOutlet.id,
+    },
   ];
 
   for (const ur of userRolesData) {
@@ -849,7 +904,7 @@ async function main() {
       await prisma.user_roles.create({ data: ur });
     }
   }
-  console.log('✅ User-role assignments seeded (only admin has role)\n');
+  console.log(`✅ ${userRolesData.length} user-role assignments seeded\n`);
 
   // 9. Daily Reports (aggregated report rows)
   console.log('📊 Seeding daily reports...');
@@ -939,14 +994,28 @@ async function main() {
   console.log('  Password: password123');
   console.log('  Merchant: Merchant Admin');
   console.log('  Outlet: Outlet Admin');
+  console.log('  Role: admin');
   console.log('');
-  console.log('Demo Store Users:');
-  console.log('  Email: owner@demo.com (Owner)');
-  console.log('  Email: store-manager@demo.com (Manager)');
-  console.log('  Email: cashier@demo.com (Cashier)');
-  console.log('  Email: manager@demo.com (Manager)');
-  console.log('  Email: viewer@demo.com (Viewer)');
-  console.log('  Password: password123 (for all users)');
+  console.log('Demo Store Users (Merchant: Demo Store):');
+  console.log('  Email: owner@demo.com');
+  console.log('  Password: password123');
+  console.log('  Role: owner (Main Branch & Second Branch)');
+  console.log('');
+  console.log('  Email: store-manager@demo.com');
+  console.log('  Password: password123');
+  console.log('  Role: manager (Main Branch & Second Branch)');
+  console.log('');
+  console.log('  Email: cashier@demo.com');
+  console.log('  Password: password123');
+  console.log('  Role: cashier (Main Branch & Second Branch)');
+  console.log('');
+  console.log('  Email: manager@demo.com');
+  console.log('  Password: password123');
+  console.log('  Role: manager (Main Branch & Second Branch)');
+  console.log('');
+  console.log('  Email: viewer@demo.com');
+  console.log('  Password: password123');
+  console.log('  Role: viewer (Main Branch & Second Branch)');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 }
 

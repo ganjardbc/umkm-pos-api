@@ -11,6 +11,8 @@ import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { TransactionItemsModule } from './transaction_items/transaction-items.module';
 import { ShiftsModule } from './shifts/shifts.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { StockModule } from './stock/stock.module';
 import { UsersModule } from './users/users.module';
 import { RbacModule } from './rbac/rbac.module';
@@ -32,6 +34,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     TransactionsModule,
     TransactionItemsModule,
     ShiftsModule,
+    AuditLogsModule,
+    MetricsModule,
     StockModule,
     UsersModule,
     RbacModule,
