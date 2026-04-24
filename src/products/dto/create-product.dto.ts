@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   Min,
@@ -31,6 +32,11 @@ export class CreateProductDto {
   @IsString()
   @MaxLength(120)
   category?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-string', description: 'Category ID (optional, must belong to same merchant)' })
+  @IsOptional()
+  @IsUUID()
+  category_id?: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/product.jpg', description: 'Thumbnail image URL' })
   @IsOptional()

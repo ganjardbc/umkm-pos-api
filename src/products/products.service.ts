@@ -2,15 +2,20 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { CategoriesService } from './categories/categories.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private categoriesService: CategoriesService,
+  ) {}
 
   async findAll(merchantId: string, pagination: PaginationDto) {
     const { page = 1, limit = 10 } = pagination;
@@ -20,7 +25,7 @@ export class ProductsService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.products.findMany({
         where,
-        include: { merchants: true },
+        include: { merchants: true, product_categories: true },
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,
@@ -33,7 +38,7 @@ export class ProductsService {
 
   async findOne(id: string, merchantId: string) {
     const product = await this.prisma.products.findFirst({
-      include: { merchants: true },
+      include: { merchants: true, product_categories: true },
       where: { id, merchant_id: merchantId },
     });
 
@@ -56,6 +61,20 @@ export class ProductsService {
       );
     }
 
+    // Validate category_id if provided
+    if (dto.category_id) {
+      try {
+        await this.categoriesService.findOne(dto.category_id, merchantId);
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          throw new BadRequestException(
+            'Invalid category_id: category does not exist or belongs to another merchant',
+          );
+        }
+        throw error;
+      }
+    }
+
     return this.prisma.products.create({
       data: {
         ...dto,
@@ -68,6 +87,7 @@ export class ProductsService {
         created_by: userId,
         updated_by: userId,
       },
+      include: { merchants: true, product_categories: true },
     });
   }
 
@@ -93,6 +113,25 @@ export class ProductsService {
       }
     }
 
+    // Validate category_id if provided
+    if (dto.category_id !== undefined) {
+      if (dto.category_id === null) {
+        // Allow clearing category_id by setting to null
+      } else {
+        // Validate category exists and belongs to same merchant
+        try {
+          await this.categoriesService.findOne(dto.category_id, merchantId);
+        } catch (error) {
+          if (error instanceof NotFoundException) {
+            throw new BadRequestException(
+              'Invalid category_id: category does not exist or belongs to another merchant',
+            );
+          }
+          throw error;
+        }
+      }
+    }
+
     return this.prisma.products.update({
       where: { id },
       data: {
@@ -100,6 +139,7 @@ export class ProductsService {
         updated_by: userId,
         updated_at: new Date(),
       },
+      include: { merchants: true, product_categories: true },
     });
   }
 

@@ -14,6 +14,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -62,6 +63,12 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get product by ID (merchant-scoped)' })
   @ApiResponse({ status: 200, description: 'Return product details' })
   @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Product ID (UUID format)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   findOne(
     @Param('id') id: string,
     @CurrentUser('merchant_id') merchantId: string,
