@@ -1,5 +1,6 @@
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsOptional, IsUUID, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 /**
@@ -13,4 +14,17 @@ export class FindAllTransactionsDto extends PaginationDto {
   @IsOptional()
   @IsUUID()
   outlet_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by cancellation status (true or false)',
+    example: 'false',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
+  @IsBoolean()
+  is_cancelled?: boolean;
 }

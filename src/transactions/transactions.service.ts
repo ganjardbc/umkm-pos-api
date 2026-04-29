@@ -20,6 +20,7 @@ export class TransactionsService {
   async findAll(
     merchantId: string,
     outletId?: string,
+    is_cancelled?: boolean,
     pagination: PaginationDto = new PaginationDto(),
   ) {
     const outletWhere = outletId
@@ -47,7 +48,7 @@ export class TransactionsService {
     const skip = pagination.skip;
     const where = {
       outlet_id: outletId ? outletId : { in: outletIds },
-      is_cancelled: false,
+      ...(is_cancelled !== undefined && { is_cancelled }),
     };
 
     const [data, total] = await this.prisma.$transaction([
@@ -80,7 +81,6 @@ export class TransactionsService {
       where: {
         id,
         outlet_id: { in: outletIds },
-        is_cancelled: false,
       },
       include: {
         transaction_items: true,
@@ -117,7 +117,9 @@ export class TransactionsService {
         await this.shiftsService.validateShiftOpen(dto.shift_id);
       } catch (error) {
         if (error instanceof NotFoundException) {
-          throw new BadRequestException('Shift is not available for transactions');
+          throw new BadRequestException(
+            'Shift is not available for transactions',
+          );
         }
         throw error;
       }
@@ -128,9 +130,7 @@ export class TransactionsService {
         userId,
       );
       if (!isActiveParticipant) {
-        throw new ForbiddenException(
-          'User is not a participant in this shift',
-        );
+        throw new ForbiddenException('User is not a participant in this shift');
       }
 
       cashierId = userId;

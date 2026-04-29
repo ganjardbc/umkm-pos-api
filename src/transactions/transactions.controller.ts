@@ -39,8 +39,14 @@ export class TransactionsController {
     status: 400,
     description: 'Insufficient stock, invalid items, or shift not available',
   })
-  @ApiResponse({ status: 403, description: 'User not a participant in shift or insufficient permissions' })
-  @ApiResponse({ status: 404, description: 'Product, outlet, or shift not found' })
+  @ApiResponse({
+    status: 403,
+    description: 'User not a participant in shift or insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product, outlet, or shift not found',
+  })
   create(
     @Body() dto: CreateTransactionDto,
     @CurrentUser('merchant_id') merchantId: string,
@@ -62,7 +68,12 @@ export class TransactionsController {
     @CurrentUser('merchant_id') merchantId: string,
     @Query() query: FindAllTransactionsDto,
   ) {
-    return this.transactionsService.findAll(merchantId, query.outlet_id, query);
+    return this.transactionsService.findAll(
+      merchantId,
+      query.outlet_id,
+      query.is_cancelled,
+      query,
+    );
   }
 
   @Get(':id')
